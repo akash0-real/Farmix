@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "974592138354",
+    "project_id": "farmix-e84e1",
+    "storage_bucket": "farmix-e84e1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:974592138354:android:b5abd9e6294819574df6eb",
+        "android_client_info": {
+          "package_name": "com.farmix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNuS3Sd8FuhyUBzbpQ8J83VwBYqNqG0OI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+
