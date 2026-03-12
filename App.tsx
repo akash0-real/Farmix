@@ -1,44 +1,40 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import { useState } from 'react';
+import { SafeAreaView, StatusBar, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import LoginScreen from './src/screens/LoginScreen';
+import PreLoginScreen from './src/screens/PreLoginScreen';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+type Screen = 'preLogin' | 'login';
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  const [screen, setScreen] = useState<Screen>('preLogin');
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <StatusBar barStyle="dark-content" backgroundColor="#f3f5f4" />
+      <SafeAreaView style={styles.safeArea}>
+        {screen === 'preLogin' ? (
+          <PreLoginScreen
+            onGetStarted={() => setScreen('login')}
+            onHaveAccount={() => setScreen('login')}
+          />
+        ) : (
+          <LoginScreen
+            selectedLanguage={selectedLanguage}
+            onSelectLanguage={setSelectedLanguage}
+            onBack={() => setScreen('preLogin')}
+          />
+        )}
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: '#f3f5f4',
   },
 });
 
