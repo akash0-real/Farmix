@@ -3,6 +3,8 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  PermissionsAndroid,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,7 +12,8 @@ import {
   View,
 } from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
-import { analyzeCropDisease } from '../services/geminiApi';
+import { detectCropDiseaseAI } from '../services/cropDoctorService';
+import { publishDiseaseAlert } from '../services/alertService';
 
 function ResultSection({ title, items }) {
   if (!items?.length) {
@@ -29,6 +32,29 @@ function ResultSection({ title, items }) {
   );
 }
 
+function PredictionSection({ predictions }) {
+  if (!Array.isArray(predictions) || predictions.length === 0) {
+    return null;
+  }
+
+  return (
+    <View style={styles.sectionCard}>
+      <Text style={styles.sectionTitle}>Top model predictions</Text>
+      {predictions.map(prediction => (
+        <View
+          key={`${prediction.label}-${prediction.confidencePercent}`}
+          style={styles.predictionRow}
+        >
+          <Text style={styles.predictionLabel}>{prediction.label}</Text>
+          <Text style={styles.predictionConfidence}>
+            {prediction.confidencePercent}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function CropDoctorScreen() {
   const [capturedImage, setCapturedImage] = useState(null);
   const [scanResult, setScanResult] = useState(null);
@@ -36,6 +62,20 @@ export default function CropDoctorScreen() {
 
   const handleCapture = async () => {
     try {
+      if (Platform.OS === 'android') {
+        const cameraGranted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+        );
+
+        if (cameraGranted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert(
+            'Camera Permission Needed',
+            'Please allow camera access to capture crop photos.',
+          );
+          return;
+        }
+      }
+
       const response = await launchCamera({
         mediaType: 'photo',
         cameraType: 'back',
@@ -74,13 +114,22 @@ export default function CropDoctorScreen() {
     setIsScanning(true);
 
     try {
-      const result = await analyzeCropDisease({
+      const result = await detectCropDiseaseAI({
         base64Data: capturedImage.base64,
         mimeType: capturedImage.type || 'image/jpeg',
       });
 
+      const communityAlert = publishDiseaseAlert({
+        diseaseName: result.diseaseName,
+        crop: result.crop,
+        severity: result.severity,
+      });
+
       setScanResult(result);
-      Alert.alert('Analysis Complete', `Detected: ${result.diseaseName}`);
+      Alert.alert(
+        'Analysis Complete',
+        `Detected: ${result.diseaseName} (${result.confidence}). Community alert radius: ${communityAlert.radiusKm} km.`,
+      );
     } catch (error) {
       Alert.alert('Scan Failed', error.message);
     } finally {
@@ -104,6 +153,13 @@ export default function CropDoctorScreen() {
         Take a clear photo of the affected leaf or fruit and Farmix will screen
         it for possible disease signs.
       </Text>
+
+      <View style={styles.configCard}>
+        <Text style={styles.configTitle}>Demo mode enabled</Text>
+        <Text style={styles.configText}>
+          Crop Doctor uses a built-in Gemini key for this prototype build.
+        </Text>
+      </View>
 
       <View style={styles.heroCard}>
         {capturedImage?.uri ? (
@@ -167,6 +223,7 @@ export default function CropDoctorScreen() {
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{scanResult.confidence}</Text>
                 </View>
+                <Text style={styles.bandText}>{scanResult.confidenceBand}</Text>
                 <Text style={styles.severityText}>
                   Severity: {scanResult.severity}
                 </Text>
@@ -174,8 +231,23 @@ export default function CropDoctorScreen() {
             </View>
 
             <Text style={styles.cropText}>Crop: {scanResult.crop}</Text>
+            <Text style={styles.modelText}>
+              Model: {scanResult.modelVersion || 'unknown'}
+            </Text>
             <Text style={styles.summaryText}>{scanResult.summary}</Text>
           </View>
+
+          {scanResult.needsRetake ? (
+            <View style={styles.retakeCard}>
+              <Text style={styles.retakeTitle}>Low confidence result</Text>
+              <Text style={styles.retakeText}>
+                Retake the photo in brighter light and keep one affected leaf in
+                full focus before treatment.
+              </Text>
+            </View>
+          ) : null}
+
+          <PredictionSection predictions={scanResult.topPredictions} />
 
           <ResultSection title="Treatment steps" items={scanResult.treatment} />
           <ResultSection title="Prevention tips" items={scanResult.prevention} />
@@ -306,6 +378,26 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#8a6a3a',
   },
+  configCard: {
+    marginTop: 16,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d7dde4',
+    padding: 14,
+  },
+  configTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#26364a',
+    marginBottom: 6,
+  },
+  configText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#586b82',
+    marginBottom: 10,
+  },
   resultCard: {
     marginTop: 20,
     borderRadius: 18,
@@ -351,11 +443,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#576577',
   },
+  bandText: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1a6b3a',
+  },
   cropText: {
     marginTop: 12,
     fontSize: 14,
     fontWeight: '700',
     color: '#355542',
+  },
+  modelText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#6e7f74',
   },
   summaryText: {
     marginTop: 10,
@@ -380,6 +483,42 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: '#435465',
     marginBottom: 6,
+  },
+  predictionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  predictionLabel: {
+    fontSize: 14,
+    color: '#335144',
+    flex: 1,
+    marginRight: 8,
+  },
+  predictionConfidence: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1a6b3a',
+  },
+  retakeCard: {
+    marginTop: 14,
+    borderRadius: 16,
+    backgroundColor: '#fff6ee',
+    borderWidth: 1,
+    borderColor: '#efc490',
+    padding: 14,
+  },
+  retakeTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#8d4f12',
+    marginBottom: 6,
+  },
+  retakeText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#8a6137',
   },
   disclaimerCard: {
     marginTop: 14,

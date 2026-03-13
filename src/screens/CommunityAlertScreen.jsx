@@ -1,12 +1,51 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  getCommunityAlerts,
+  subscribeToCommunityAlerts,
+} from '../services/alertService';
 
 export default function CommunityAlertScreen() {
+  const [alerts, setAlerts] = useState(() => getCommunityAlerts());
+
+  useEffect(() => {
+    const unsubscribe = subscribeToCommunityAlerts(nextAlerts => {
+      setAlerts(nextAlerts);
+    });
+
+    return unsubscribe;
+  }, []);
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Community Alerts</Text>
-      <Text style={styles.subtitle}>Weather and local safety notifications.</Text>
-    </View>
+      <Text style={styles.subtitle}>
+        Severity-based disease notifications by impact radius.
+      </Text>
+
+      {alerts.map(alert => (
+        <View
+          key={alert.id}
+          style={[
+            styles.card,
+            alert.severity === 'high'
+              ? styles.high
+              : alert.severity === 'moderate'
+                ? styles.moderate
+                : styles.low,
+          ]}
+        >
+          <Text style={styles.cardTitle}>{alert.title}</Text>
+          <Text style={styles.cardMessage}>{alert.message}</Text>
+          <Text style={styles.meta}>
+            Severity: {alert.severity.toUpperCase()} | Radius: {alert.radiusKm} km
+          </Text>
+          <Text style={styles.meta}>
+            Area: {alert.locationName} | {new Date(alert.createdAt).toLocaleString()}
+          </Text>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
 
@@ -15,6 +54,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#f3f5f4',
+  },
+  content: {
+    paddingBottom: 24,
   },
   title: {
     fontSize: 28,
@@ -25,5 +67,38 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 16,
     color: '#576577',
+    marginBottom: 14,
+  },
+  card: {
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    padding: 14,
+    marginBottom: 12,
+    backgroundColor: '#ffffff',
+  },
+  high: {
+    borderLeftColor: '#c0392b',
+  },
+  moderate: {
+    borderLeftColor: '#d68910',
+  },
+  low: {
+    borderLeftColor: '#2d8a52',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1a223d',
+  },
+  cardMessage: {
+    marginTop: 6,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#4f5b69',
+  },
+  meta: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#6f7a89',
   },
 });

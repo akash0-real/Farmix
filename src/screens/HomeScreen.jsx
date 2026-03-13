@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import {
+  getCommunityAlerts,
+  subscribeToCommunityAlerts,
+} from '../services/alertService';
 
 const pillars = [
   {
@@ -58,11 +62,57 @@ export default function HomeScreen({
   onMandi,
   onAlerts,
 }) {
+  const [latestAlert, setLatestAlert] = useState(() => getCommunityAlerts()[0]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToCommunityAlerts(alerts => {
+      setLatestAlert(alerts[0] || null);
+    });
+
+    return unsubscribe;
+  }, []);
+
   const handlePress = action => {
     if (action === 'cropDoctor') onCropDoctor();
     else if (action === 'mandi') onMandi();
     else if (action === 'alerts') onAlerts();
   };
+
+  const bannerTone = useMemo(() => {
+    if (latestAlert?.severity === 'high') {
+      return {
+        bg: '#fff1ef',
+        border: '#c0392b',
+        title: '#c0392b',
+      };
+    }
+
+    if (latestAlert?.severity === 'moderate') {
+      return {
+        bg: '#fff8ed',
+        border: '#d68910',
+        title: '#b9770e',
+      };
+    }
+
+    return {
+      bg: '#eef8f0',
+      border: '#2d8a52',
+      title: '#2d8a52',
+    };
+  }, [latestAlert?.severity]);
+
+  const alertTitle = latestAlert
+    ? latestAlert.type === 'disease'
+      ? 'Disease Alert Nearby!'
+      : latestAlert.title
+    : 'No active alerts';
+
+  const alertSubtitle = latestAlert
+    ? latestAlert.type === 'disease'
+      ? `${latestAlert.diseaseName} detected. Notify farms within ${latestAlert.radiusKm} km.`
+      : latestAlert.message
+    : 'Run Crop Doctor to generate community risk alerts.';
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -80,13 +130,21 @@ export default function HomeScreen({
       </View>
 
       {/* Alert Banner */}
-      <TouchableOpacity style={styles.alertBanner} onPress={onAlerts}>
+      <TouchableOpacity
+        style={[
+          styles.alertBanner,
+          { backgroundColor: bannerTone.bg, borderLeftColor: bannerTone.border },
+        ]}
+        onPress={onAlerts}
+      >
         <Text style={styles.alertIcon}>🚨</Text>
         <View style={styles.alertText}>
-          <Text style={styles.alertTitle}>Disease Alert Nearby!</Text>
-          <Text style={styles.alertSub}>Tomato Blight detected 8km away</Text>
+          <Text style={[styles.alertTitle, { color: bannerTone.title }]}>
+            {alertTitle}
+          </Text>
+          <Text style={styles.alertSub}>{alertSubtitle}</Text>
         </View>
-        <Text style={styles.alertAction}>View →</Text>
+        <Text style={[styles.alertAction, { color: bannerTone.title }]}>View →</Text>
       </TouchableOpacity>
 
       {/* Pillars Grid */}
