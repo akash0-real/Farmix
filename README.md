@@ -8,11 +8,7 @@ Farmix is a voice-first mobile assistant built for small and marginal farmers in
 https://github.com/user-attachments/assets/68c2567f-8632-4cde-9856-63a0a0687f79
 
 
-Place your demo file here: 
 
-Direct link: [Watch/Download demo](./videos/farmix-demo.mp4)
-
-[![Farmix Demo Preview](./videos/farmix-demo-preview.gif)](./videos/farmix-demo.mp4)
 
 
 ## Problem Statement
