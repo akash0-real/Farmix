@@ -8,7 +8,6 @@ Place your demo file here: `videos/farmix-demo.mp4`
 
 Demo file link: [Watch demo](videos/farmix-demo.mp4)
 
-External link (optional): `https://youtube.com/shorts/D0LuQDIDKiw?feature=share`
 
 ## Problem Statement
 
