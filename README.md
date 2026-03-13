@@ -4,9 +4,7 @@ Farmix is a voice-first mobile assistant for small and marginal farmers in India
 
 ## Demo Video
 
-- Live demo: https://github.com/user-attachments/assets/68c2567f-8632-4cde-9856-63a0a0687f79
-- Local file (optional): `videos/farmix-demo.mp4`
-- Local preview: [![Farmix Demo Preview](./videos/farmix-demo-preview.gif)](./videos/farmix-demo.mp4)
+https://github.com/user-attachments/assets/a24a04d6-4fc9-4137-b89b-6057340c010e
 
 ## Problem Statement
 
