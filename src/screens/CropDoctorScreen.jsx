@@ -16,6 +16,59 @@ import { launchCamera } from 'react-native-image-picker';
 import { detectCropDiseaseAI } from '../services/cropDoctorService';
 import { publishDiseaseAlert } from '../services/alertService';
 
+function extractRetrySeconds(message) {
+  const match = String(message || '').match(/retry in\s+([\d.]+)s/i);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  const seconds = Number.parseFloat(match[1]);
+  if (Number.isNaN(seconds)) {
+    return null;
+  }
+
+  return Math.max(1, Math.ceil(seconds));
+}
+
+function isQuotaOrRateLimitError(message) {
+  const value = String(message || '').toLowerCase();
+  return (
+    value.includes('quota') ||
+    value.includes('rate limit') ||
+    value.includes('too many requests') ||
+    value.includes('retry in')
+  );
+}
+
+function buildDemoFallbackResult(message) {
+  const retrySeconds = extractRetrySeconds(message);
+
+  return {
+    diseaseName: 'Potential disease stress',
+    confidence: 'Low',
+    confidenceBand: 'Low',
+    severity: 'Low',
+    crop: 'Unknown crop',
+    modelVersion: 'fallback-demo-mode',
+    summary: retrySeconds
+      ? `AI service is busy right now. Please retry in about ${retrySeconds} seconds.`
+      : 'AI service is temporarily unavailable. Retake a close-up photo and try again shortly.',
+    treatment: [
+      'Retake photo in bright light and keep one affected leaf centered.',
+      'Isolate visibly damaged leaves until confirmation.',
+      'Consult a local agronomist before spraying.',
+    ],
+    prevention: [
+      'Avoid overhead irrigation while leaves are wet.',
+      'Sanitize tools after touching affected plants.',
+    ],
+    disclaimer:
+      'Fallback advice shown because live AI analysis is temporarily unavailable.',
+    topPredictions: [],
+    needsRetake: true,
+  };
+}
+
 function ResultSection({ title, items }) {
   if (!items?.length) return null;
   return (
@@ -142,7 +195,31 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
         `Detected: ${result.diseaseName}\nSeverity: ${result.severity}\n⚠️ ${communityAlert.radiusKm}km community alert triggered!`,
       );
     } catch (error) {
-      Alert.alert('Scan Failed', error.message);
+      const message = error?.message || 'Scan could not be completed.';
+
+      if (isQuotaOrRateLimitError(message)) {
+        const retrySeconds = extractRetrySeconds(message);
+        const fallbackResult = buildDemoFallbackResult(message);
+        setScanResult(fallbackResult);
+
+        Tts.stop();
+        setTimeout(() => {
+          Tts.speak(
+            retrySeconds
+              ? `AI service is busy. Please retry in about ${retrySeconds} seconds.`
+              : 'AI service is busy. Please retry in about one minute.',
+          );
+        }, 400);
+
+        Alert.alert(
+          'AI Busy',
+          retrySeconds
+            ? `High traffic right now. Please retry in about ${retrySeconds} seconds.`
+            : 'High traffic right now. Please retry in about one minute.',
+        );
+      } else {
+        Alert.alert('Scan Failed', message);
+      }
     } finally {
       setIsScanning(false);
     }
