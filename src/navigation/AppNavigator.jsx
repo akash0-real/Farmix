@@ -26,8 +26,10 @@ export default function AppNavigator({ selectedLanguage }) {
           onMandi: () => setActiveScreen('MandiPrices'),
           onAlerts: () => setActiveScreen('CommunityAlert'),
         }
-      : {};
-
+      : {
+          selectedLanguage,
+          onBack: () => setActiveScreen('Home'),
+        };
   return (
     <View style={styles.container}>
       <View style={styles.tabRow}>
@@ -35,7 +37,10 @@ export default function AppNavigator({ selectedLanguage }) {
           <Pressable
             key={screenName}
             onPress={() => setActiveScreen(screenName)}
-            style={[styles.tab, activeScreen === screenName && styles.activeTab]}
+            style={[
+              styles.tab,
+              activeScreen === screenName && styles.activeTab,
+            ]}
           >
             <Text style={styles.tabText}>{screenName}</Text>
           </Pressable>
