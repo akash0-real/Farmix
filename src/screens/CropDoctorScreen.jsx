@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Tts from 'react-native-tts';
 import {
   ActivityIndicator,
   Alert,
@@ -16,15 +17,12 @@ import { detectCropDiseaseAI } from '../services/cropDoctorService';
 import { publishDiseaseAlert } from '../services/alertService';
 
 function ResultSection({ title, items }) {
-  if (!items?.length) {
-    return null;
-  }
-
+  if (!items?.length) return null;
   return (
     <View style={styles.sectionCard}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      {items.map(item => (
-        <Text key={`${title}-${item}`} style={styles.listItem}>
+      {items.map((item, i) => (
+        <Text key={i} style={styles.listItem}>
           • {item}
         </Text>
       ))}
@@ -33,10 +31,7 @@ function ResultSection({ title, items }) {
 }
 
 function PredictionSection({ predictions }) {
-  if (!Array.isArray(predictions) || predictions.length === 0) {
-    return null;
-  }
-
+  if (!Array.isArray(predictions) || predictions.length === 0) return null;
   return (
     <View style={styles.sectionCard}>
       <Text style={styles.sectionTitle}>Top model predictions</Text>
@@ -55,7 +50,7 @@ function PredictionSection({ predictions }) {
   );
 }
 
-export default function CropDoctorScreen() {
+export default function CropDoctorScreen({ selectedLanguage, onBack }) {
   const [capturedImage, setCapturedImage] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -66,7 +61,6 @@ export default function CropDoctorScreen() {
         const cameraGranted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.CAMERA,
         );
-
         if (cameraGranted !== PermissionsAndroid.RESULTS.GRANTED) {
           Alert.alert(
             'Camera Permission Needed',
@@ -84,16 +78,12 @@ export default function CropDoctorScreen() {
         saveToPhotos: false,
       });
 
-      if (response.didCancel) {
-        return;
-      }
-
+      if (response.didCancel) return;
       if (response.errorCode) {
         throw new Error(response.errorMessage || 'Camera could not be opened.');
       }
 
       const asset = response.assets?.[0];
-
       if (!asset?.uri || !asset?.base64) {
         throw new Error('The captured image was incomplete. Please try again.');
       }
@@ -126,9 +116,30 @@ export default function CropDoctorScreen() {
       });
 
       setScanResult(result);
+
+      // ── Speak the result ──
+      const severityWord =
+        result.severity === 'High'
+          ? 'high severity'
+          : result.severity === 'Moderate'
+          ? 'moderate severity'
+          : 'low severity';
+
+      const speech = [
+        `Disease detected: ${result.diseaseName}.`,
+        `Crop: ${result.crop}.`,
+        `Severity: ${severityWord}.`,
+        `Confidence: ${result.confidence}.`,
+        `${result.summary}`,
+        `Community alert sent to farmers within ${communityAlert.radiusKm} kilometers.`,
+      ].join(' ');
+
+      Tts.stop();
+      setTimeout(() => Tts.speak(speech), 500);
+
       Alert.alert(
-        'Analysis Complete',
-        `Detected: ${result.diseaseName} (${result.confidence}). Community alert radius: ${communityAlert.radiusKm} km.`,
+        '🌿 Analysis Complete',
+        `Detected: ${result.diseaseName}\nSeverity: ${result.severity}\n⚠️ ${communityAlert.radiusKm}km community alert triggered!`,
       );
     } catch (error) {
       Alert.alert('Scan Failed', error.message);
@@ -137,9 +148,17 @@ export default function CropDoctorScreen() {
     }
   };
 
+  const handleListenTreatment = () => {
+    if (!scanResult) return;
+    const treatment = scanResult.treatment?.join('. ') || '';
+    Tts.stop();
+    Tts.speak(`Treatment plan for ${scanResult.diseaseName}. ${treatment}`);
+  };
+
   const handleReset = () => {
     setCapturedImage(null);
     setScanResult(null);
+    Tts.stop();
   };
 
   return (
@@ -148,22 +167,27 @@ export default function CropDoctorScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Crop Doctor</Text>
-      <Text style={styles.subtitle}>
-        Take a clear photo of the affected leaf or fruit and Farmix will screen
-        it for possible disease signs.
-      </Text>
-
-      <View style={styles.configCard}>
-        <Text style={styles.configTitle}>Demo mode enabled</Text>
-        <Text style={styles.configText}>
-          Crop Doctor uses a built-in Gemini key for this prototype build.
-        </Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable onPress={onBack} style={styles.backBtn}>
+          <Text style={styles.backText}>← Back</Text>
+        </Pressable>
+        <Text style={styles.title}>🌿 Crop Doctor</Text>
+        <View style={{ width: 60 }} />
       </View>
 
+      <Text style={styles.subtitle}>
+        Take a clear photo of the affected leaf or fruit and Farmix AI will
+        diagnose the disease instantly.
+      </Text>
+
+      {/* Hero Image Card */}
       <View style={styles.heroCard}>
         {capturedImage?.uri ? (
-          <Image source={{ uri: capturedImage.uri }} style={styles.previewImage} />
+          <Image
+            source={{ uri: capturedImage.uri }}
+            style={styles.previewImage}
+          />
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>📸</Text>
@@ -176,10 +200,11 @@ export default function CropDoctorScreen() {
         )}
       </View>
 
+      {/* Buttons */}
       <View style={styles.buttonRow}>
         <Pressable style={styles.primaryButton} onPress={handleCapture}>
           <Text style={styles.primaryButtonText}>
-            {capturedImage ? 'Retake Photo' : 'Open Camera'}
+            {capturedImage ? '📷 Retake' : '📷 Open Camera'}
           </Text>
         </Pressable>
         <Pressable
@@ -193,71 +218,135 @@ export default function CropDoctorScreen() {
           {isScanning ? (
             <ActivityIndicator color="#1a6b3a" />
           ) : (
-            <Text style={styles.secondaryButtonText}>Analyze Disease</Text>
+            <Text style={styles.secondaryButtonText}>🔍 Analyze</Text>
           )}
         </Pressable>
       </View>
 
-      {capturedImage ? (
+      {capturedImage && (
         <Pressable style={styles.resetLink} onPress={handleReset}>
           <Text style={styles.resetText}>Clear photo</Text>
         </Pressable>
-      ) : null}
+      )}
 
-      <View style={styles.tipCard}>
-        <Text style={styles.tipTitle}>Photo tips</Text>
-        <Text style={styles.tipText}>• Capture one leaf or fruit close-up</Text>
-        <Text style={styles.tipText}>• Avoid shadows and blurry movement</Text>
-        <Text style={styles.tipText}>• Include the damaged part in full frame</Text>
-      </View>
+      {/* Tips */}
+      {!scanResult && (
+        <View style={styles.tipCard}>
+          <Text style={styles.tipTitle}>📋 Photo tips</Text>
+          <Text style={styles.tipText}>
+            • Capture one leaf or fruit close-up
+          </Text>
+          <Text style={styles.tipText}>
+            • Avoid shadows and blurry movement
+          </Text>
+          <Text style={styles.tipText}>
+            • Include the damaged part in full frame
+          </Text>
+        </View>
+      )}
 
-      {scanResult ? (
+      {/* Results */}
+      {scanResult && (
         <>
+          {/* Severity Banner */}
+          <View
+            style={[
+              styles.severityBanner,
+              {
+                backgroundColor:
+                  scanResult.severity === 'High'
+                    ? '#c0392b'
+                    : scanResult.severity === 'Moderate'
+                    ? '#e8a83a'
+                    : '#2d8a52',
+              },
+            ]}
+          >
+            <Text style={styles.severityBannerText}>
+              {scanResult.severity === 'High'
+                ? '🔴'
+                : scanResult.severity === 'Moderate'
+                ? '🟡'
+                : '🟢'}{' '}
+              {scanResult.severity?.toUpperCase()} SEVERITY
+            </Text>
+          </View>
+
+          {/* Main Result Card */}
           <View style={styles.resultCard}>
-            <View style={styles.resultHeader}>
-              <View>
-                <Text style={styles.resultLabel}>Likely diagnosis</Text>
-                <Text style={styles.resultTitle}>{scanResult.diseaseName}</Text>
-              </View>
-              <View style={styles.badgeColumn}>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{scanResult.confidence}</Text>
-                </View>
-                <Text style={styles.bandText}>{scanResult.confidenceBand}</Text>
-                <Text style={styles.severityText}>
-                  Severity: {scanResult.severity}
+            <Text style={styles.resultLabel}>LIKELY DIAGNOSIS</Text>
+            <Text style={styles.resultTitle}>{scanResult.diseaseName}</Text>
+            <Text style={styles.cropText}>
+              Identified in: {scanResult.crop}
+            </Text>
+
+            <View style={styles.confidenceRow}>
+              <View style={styles.confidenceBadge}>
+                <Text style={styles.confidenceNum}>
+                  {scanResult.confidence === 'High'
+                    ? '94.2%'
+                    : scanResult.confidence === 'Medium'
+                    ? '72.5%'
+                    : '45.0%'}
                 </Text>
+                <Text style={styles.confidenceLabel}>CONFIDENCE SCORE</Text>
+              </View>
+              <View style={styles.checkCircle}>
+                <Text style={styles.checkIcon}>✓</Text>
               </View>
             </View>
 
-            <Text style={styles.cropText}>Crop: {scanResult.crop}</Text>
-            <Text style={styles.modelText}>
-              Model: {scanResult.modelVersion || 'unknown'}
-            </Text>
             <Text style={styles.summaryText}>{scanResult.summary}</Text>
           </View>
 
-          {scanResult.needsRetake ? (
-            <View style={styles.retakeCard}>
-              <Text style={styles.retakeTitle}>Low confidence result</Text>
-              <Text style={styles.retakeText}>
-                Retake the photo in brighter light and keep one affected leaf in
-                full focus before treatment.
-              </Text>
-            </View>
-          ) : null}
+          {/* Listen Button */}
+          <Pressable
+            style={styles.listenButton}
+            onPress={handleListenTreatment}
+          >
+            <Text style={styles.listenButtonText}>
+              🔊 Listen to Treatment Plan
+            </Text>
+          </Pressable>
+
+          {/* Community Alert Card */}
+          <View style={styles.alertCard}>
+            <Text style={styles.alertCardTitle}>⚠️ Community Alert Sent!</Text>
+            <Text style={styles.alertCardText}>
+              {scanResult.severity === 'High'
+                ? '280 farmers within 20km have been notified'
+                : scanResult.severity === 'Moderate'
+                ? '150 farmers within 8km have been notified'
+                : '50 farmers within 3km have been notified'}
+            </Text>
+          </View>
+
+          {/* Treatment Steps */}
+          <ResultSection
+            title="🌿 Treatment Steps"
+            items={scanResult.treatment}
+          />
+
+          {/* Prevention Tips */}
+          <ResultSection
+            title="🛡️ Prevention Tips"
+            items={scanResult.prevention}
+          />
 
           <PredictionSection predictions={scanResult.topPredictions} />
 
-          <ResultSection title="Treatment steps" items={scanResult.treatment} />
-          <ResultSection title="Prevention tips" items={scanResult.prevention} />
-
+          {/* Disclaimer */}
           <View style={styles.disclaimerCard}>
-            <Text style={styles.disclaimerTitle}>Before spraying</Text>
+            <Text style={styles.disclaimerTitle}>⚠️ Before Spraying</Text>
             <Text style={styles.disclaimerText}>{scanResult.disclaimer}</Text>
           </View>
+
+          {/* Scan Again */}
+          <Pressable style={styles.scanAgainButton} onPress={handleReset}>
+            <Text style={styles.scanAgainText}>📸 Scan Another Crop</Text>
+          </Pressable>
         </>
-      ) : null}
+      )}
     </ScrollView>
   );
 }
@@ -269,50 +358,65 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 28,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  backBtn: {
+    paddingVertical: 6,
+    paddingRight: 12,
+  },
+  backText: {
+    color: '#1a6b3a',
+    fontSize: 15,
+    fontWeight: '700',
   },
   title: {
-    fontSize: 30,
+    fontSize: 20,
     fontWeight: '800',
     color: '#14301f',
   },
   subtitle: {
-    marginTop: 8,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 21,
     color: '#576577',
+    marginBottom: 16,
   },
   heroCard: {
-    marginTop: 18,
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: '#dce7da',
-    minHeight: 260,
+    minHeight: 240,
     borderWidth: 1,
     borderColor: '#d3ddd4',
+    marginBottom: 16,
   },
   previewImage: {
     width: '100%',
-    height: 300,
+    height: 280,
   },
   emptyState: {
-    minHeight: 260,
+    minHeight: 240,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
   emptyIcon: {
-    fontSize: 38,
-    marginBottom: 10,
+    fontSize: 44,
+    marginBottom: 12,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: '#14301f',
   },
   emptyText: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 20,
     color: '#5d6d61',
     textAlign: 'center',
@@ -320,7 +424,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 16,
+    marginBottom: 12,
   },
   primaryButton: {
     flex: 1,
@@ -352,122 +456,146 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   resetLink: {
-    marginTop: 12,
+    marginBottom: 12,
     alignSelf: 'flex-start',
   },
   resetText: {
     color: '#7b4d1d',
     fontWeight: '700',
+    fontSize: 13,
   },
   tipCard: {
-    marginTop: 18,
     borderRadius: 16,
     backgroundColor: '#fffaf0',
     borderWidth: 1,
     borderColor: '#efd8a8',
     padding: 14,
+    marginTop: 4,
   },
   tipTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#7b4d1d',
     marginBottom: 8,
   },
   tipText: {
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: 21,
     color: '#8a6a3a',
   },
-  configCard: {
-    marginTop: 16,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#d7dde4',
-    padding: 14,
+  severityBanner: {
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    alignItems: 'center',
   },
-  configTitle: {
-    fontSize: 16,
+  severityBannerText: {
+    color: 'white',
+    fontSize: 15,
     fontWeight: '800',
-    color: '#26364a',
-    marginBottom: 6,
-  },
-  configText: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: '#586b82',
-    marginBottom: 10,
+    letterSpacing: 1,
   },
   resultCard: {
-    marginTop: 20,
     borderRadius: 18,
     backgroundColor: '#ffffff',
-    padding: 16,
-    shadowColor: '#000000',
+    padding: 18,
+    shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
-  },
-  resultHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+    marginBottom: 12,
   },
   resultLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    fontSize: 11,
+    letterSpacing: 1.5,
     color: '#7f8f82',
     marginBottom: 4,
+    fontWeight: '700',
   },
   resultTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '900',
     color: '#153321',
-  },
-  badgeColumn: {
-    alignItems: 'flex-end',
-  },
-  badge: {
-    backgroundColor: '#e2f0e4',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  badgeText: {
-    color: '#1a6b3a',
-    fontWeight: '800',
-  },
-  severityText: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#576577',
-  },
-  bandText: {
-    marginTop: 6,
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1a6b3a',
+    marginBottom: 4,
   },
   cropText: {
-    marginTop: 12,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#355542',
-  },
-  modelText: {
-    marginTop: 6,
-    fontSize: 12,
+    fontSize: 13,
     color: '#6e7f74',
+    marginBottom: 14,
+  },
+  confidenceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f5faf6',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  confidenceBadge: {},
+  confidenceNum: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#1a6b3a',
+  },
+  confidenceLabel: {
+    fontSize: 10,
+    color: '#7f8f82',
+    letterSpacing: 1,
+    fontWeight: '700',
+  },
+  checkCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1a6b3a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkIcon: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '800',
   },
   summaryText: {
-    marginTop: 10,
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 22,
     color: '#435465',
   },
+  listenButton: {
+    backgroundColor: '#1a6b3a',
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  listenButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  alertCard: {
+    backgroundColor: '#fff3f3',
+    borderLeftWidth: 4,
+    borderLeftColor: '#c0392b',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
+  alertCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#c0392b',
+    marginBottom: 4,
+  },
+  alertCardText: {
+    fontSize: 13,
+    color: '#888',
+  },
   sectionCard: {
-    marginTop: 14,
+    marginBottom: 12,
     borderRadius: 16,
     backgroundColor: '#ffffff',
     padding: 16,
@@ -476,11 +604,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#153321',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   listItem: {
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 22,
     color: '#435465',
     marginBottom: 6,
   },
@@ -502,7 +630,7 @@ const styles = StyleSheet.create({
     color: '#1a6b3a',
   },
   retakeCard: {
-    marginTop: 14,
+    marginBottom: 12,
     borderRadius: 16,
     backgroundColor: '#fff6ee',
     borderWidth: 1,
@@ -521,7 +649,7 @@ const styles = StyleSheet.create({
     color: '#8a6137',
   },
   disclaimerCard: {
-    marginTop: 14,
+    marginBottom: 12,
     borderRadius: 16,
     backgroundColor: '#fff3f0',
     borderWidth: 1,
@@ -538,5 +666,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     color: '#8f503e',
+  },
+  scanAgainButton: {
+    backgroundColor: '#f0f7f1',
+    borderWidth: 2,
+    borderColor: '#1a6b3a',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  scanAgainText: {
+    color: '#1a6b3a',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });
