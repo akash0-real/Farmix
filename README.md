@@ -1,97 +1,130 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Farmix
 
-# Getting Started
+Farmix is a voice-first mobile assistant built for small and marginal farmers in India. It helps farmers detect crop disease early, receive community risk alerts, and make faster field decisions with low typing effort.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Problem Statement
 
-## Step 1: Start Metro
+Indian farmers face three connected problems:
+1. Late disease detection causes major crop loss.
+2. Reliable advisory is often inaccessible in local languages.
+3. Small farmers lose income due to delayed decisions and weak market linkage.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+In many villages, digital tools are hard to use because they assume fluent typing, stable internet, and technical familiarity.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## What We Built
 
-```sh
-# Using npm
+Farmix prototype focuses on practical, high-impact workflows:
+
+1. Crop Doctor (AI image diagnosis)
+- Capture crop photo from camera.
+- Analyze disease likelihood using Gemini.
+- Return severity, summary, treatment, and prevention steps.
+
+2. Severity-Based Community Alerts
+- Every disease scan can publish a nearby community alert.
+- Alert radius is based on severity:
+  - Low: 3 km
+  - Moderate: 8 km
+  - High: 20 km
+
+3. Voice-First Interaction
+- Login and guidance flow uses text-to-speech.
+- Language-aware voice prompts are supported in major Indian languages.
+
+4. OTP-Based Simple Access
+- Mobile-first onboarding with OTP-style flow.
+- Designed for first-time smartphone users.
+
+5. Demo-Safe Error Handling
+- Quota/rate-limit failures now degrade gracefully.
+- App shows user-friendly fallback guidance instead of raw technical errors.
+
+## Current Prototype Scope
+
+Implemented screens and modules include:
+- Home, Crop Doctor, Community Alerts, Mandi Prices, Login, Pre-Login, Splash
+- Services for AI analysis and alert publishing
+- Basic test suite + CI workflow split (lint/test/build)
+
+## Accessibility and Inclusivity
+
+Farmix is designed for rural usability:
+1. Voice support to reduce typing dependence.
+2. Local-language guidance for higher adoption.
+3. Simple UI structure with large touch targets.
+4. Advisory-first content with practical next actions.
+
+## Tech Stack
+
+- React Native
+- JavaScript
+- Gemini API (image + advisory)
+- Jest for tests
+- GitHub Actions for CI (lint/test/build)
+
+## Repo Setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure local secrets (do not commit)
+
+Create `src/config/localSecrets.js`:
+
+```js
+module.exports = {
+  GEMINI_API_KEY: 'YOUR_GEMINI_API_KEY',
+};
+```
+
+A sample file exists at `src/config/localSecrets.example.js`.
+
+### 3. Run app
+
+```bash
 npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+### 4. Run tests
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```bash
+npm test -- --watchAll=false
 ```
 
-Then, and every time you update your native dependencies, run:
+## Impact on Farmers and Rural Livelihood
 
-```sh
-bundle exec pod install
-```
+Farmix aims to reduce avoidable crop loss by enabling earlier disease action and community-level risk sharing. It lowers the barrier to digital advisory through voice and local-language support, making technology usable for farmers with low digital literacy.
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Future Roadmap
 
-```sh
-# Using npm
-npm run ios
+1. Production Backend for Key Safety
+- Move all model calls behind a secure backend.
+- Remove direct API access from mobile client.
 
-# OR using Yarn
-yarn ios
-```
+2. Real Geo-Based Alert Broadcasting
+- Replace static radius logic with true GPS distance filtering.
+- Add district-level outbreak heatmaps.
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+3. Offline and Low-Network Mode
+- Local caching of advisories and multilingual audio packs.
+- Deferred sync when network returns.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+4. Better Model Reliability
+- Ensemble with disease-specific classifier + LLM explanation layer.
+- Confidence calibration and false-positive control.
 
-## Step 3: Modify your app
+5. Farmer Network Integrations
+- Nearby buyer matching and mandi trend recommendations.
+- Link with agri-extension experts for escalation.
 
-Now that you have successfully run the app, let's make changes!
+## Project Status
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+Prototype / PoC for hackathon submission.
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## Team Note
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+This README is structured to support hackathon evaluation fields: problem, solution, impact, inclusivity, and roadmap.
