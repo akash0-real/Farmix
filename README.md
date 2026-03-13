@@ -6,7 +6,9 @@ Farmix is a voice-first mobile assistant built for small and marginal farmers in
 
 Place your demo file here: `videos/farmix-demo.mp4`
 
-Demo file link: [Watch demo](videos/farmix-demo.mp4)
+Direct link: [Watch/Download demo](./videos/farmix-demo.mp4)
+
+[![Farmix Demo Preview](./videos/farmix-demo-preview.gif)](./videos/farmix-demo.mp4)
 
 
 ## Problem Statement
