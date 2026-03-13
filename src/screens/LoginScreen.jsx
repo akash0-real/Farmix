@@ -28,6 +28,22 @@ const WELCOME_MESSAGES = {
   Telugu: 'Farmix ki swaagatam. Meeru phone number ivvandi.',
 };
 
+const OTP_SENT_MESSAGES = {
+  English: 'OTP sent successfully. Please enter the code.',
+  Hindi: 'OTP safalta se bheja gaya. Kripya code darj karein.',
+  Kannada: 'OTP yashasviyagi kaliside. Dayavittu code namoodisi.',
+  Tamil: 'OTP vettrikaramaga anuppappattathu. Dayavuseythu code ullidavum.',
+  Telugu: 'OTP vijayavantanga pampabadindi. Dayachesi code ivvandi.',
+};
+
+const LOGIN_SUCCESS_MESSAGES = {
+  English: 'Login successful. Welcome to Farmix!',
+  Hindi: 'Login safal raha. Farmix mein aapka swagat hai!',
+  Kannada: 'Login yashasvi. Farmix ge swagata!',
+  Tamil: 'Login vettri. Farmix il ungalai varaverkiren!',
+  Telugu: 'Login vijayavantam. Farmix ki swaagatam!',
+};
+
 export default function LoginScreen({
   selectedLanguage,
   onSelectLanguage,
@@ -40,6 +56,14 @@ export default function LoginScreen({
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
   const timerRef = useRef(null);
+
+  const speakInSelectedLanguage = message => {
+    const selected = LANGUAGE_OPTIONS.find(l => l.label === selectedLanguage);
+    const ttsCode = selected?.ttsCode || 'en-IN';
+    Tts.setDefaultLanguage(ttsCode);
+    Tts.stop();
+    Tts.speak(message);
+  };
 
   // ── Speak welcome on mount ──
   useEffect(() => {
@@ -82,7 +106,9 @@ export default function LoginScreen({
     setTimeout(() => {
       setLoading(false);
       setStep('otp');
-      Tts.speak('OTP sent successfully. Please enter the code.');
+      const message =
+        OTP_SENT_MESSAGES[selectedLanguage] || OTP_SENT_MESSAGES.English;
+      speakInSelectedLanguage(message);
     }, 1500);
   };
 
@@ -96,7 +122,10 @@ export default function LoginScreen({
     setTimeout(() => {
       setLoading(false);
       if (otp === '324666') {
-        Tts.speak('Login successful. Welcome to Farmix!');
+        const message =
+          LOGIN_SUCCESS_MESSAGES[selectedLanguage] ||
+          LOGIN_SUCCESS_MESSAGES.English;
+        speakInSelectedLanguage(message);
         setTimeout(() => onLoginSuccess(), 1500);
       } else {
         Alert.alert('Wrong OTP', 'Hint: use 123456');
@@ -114,7 +143,7 @@ export default function LoginScreen({
   const speakWelcome = () => {
     const message =
       WELCOME_MESSAGES[selectedLanguage] || WELCOME_MESSAGES.English;
-    Tts.speak(message);
+    speakInSelectedLanguage(message);
   };
 
   return (
