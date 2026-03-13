@@ -66,6 +66,9 @@ yarn-error.log
 # testing
 /coverage
 
+# local app secrets (do not commit real keys)
+src/config/localSecrets.js
+
 # Yarn
 .yarn/*
 !.yarn/patches

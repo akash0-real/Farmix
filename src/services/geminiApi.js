@@ -1,4 +1,14 @@
-const GEMINI_API_KEY = 'AIzaSyApzq0xOcOx_3NkZ0YtTqB0629oWC3YGyg';
+let localGeminiKey = 'PASTE_GEMINI_API_KEY_HERE';
+try {
+  // Keep real keys in src/config/localSecrets.js (gitignored).
+  // eslint-disable-next-line global-require, import/no-unresolved
+  const localSecrets = require('../config/localSecrets');
+  localGeminiKey = localSecrets.GEMINI_API_KEY || localGeminiKey;
+} catch (error) {
+  // Fall back to placeholder when local secret file is missing.
+}
+
+const GEMINI_API_KEY = localGeminiKey;
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const PLACEHOLDER_KEY = 'PASTE_GEMINI_API_KEY_HERE';
 
