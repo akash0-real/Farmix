@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import auth from '@react-native-firebase/auth';
 import Tts from 'react-native-tts';
 
 const LANGUAGE_OPTIONS = [
@@ -24,7 +23,7 @@ const LANGUAGE_OPTIONS = [
 const WELCOME_MESSAGES = {
   English: 'Welcome to Farmix. Please enter your phone number to continue.',
   Hindi: 'Farmix mein aapka swagat hai. Apna phone number darj karein.',
-  Kannada: 'Farmix ge swagata. Nimage phone number neeḍi.',
+  Kannada: 'Farmix ge swagata. Nimage phone number needi.',
   Tamil: 'Farmix il ungalai varaverkiren. Ungal phone number kodungal.',
   Telugu: 'Farmix ki swaagatam. Meeru phone number ivvandi.',
 };
@@ -35,10 +34,9 @@ export default function LoginScreen({
   onBack,
   onLoginSuccess,
 }) {
-  const [step, setStep] = useState('phone'); // 'phone' or 'otp'
+  const [step, setStep] = useState('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
-  const [confirm, setConfirm] = useState(null);
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
   const timerRef = useRef(null);
@@ -49,10 +47,8 @@ export default function LoginScreen({
     const ttsCode = selected?.ttsCode || 'en-IN';
     const message =
       WELCOME_MESSAGES[selectedLanguage] || WELCOME_MESSAGES.English;
-
     Tts.setDefaultLanguage(ttsCode);
     setTimeout(() => Tts.speak(message), 800);
-
     return () => Tts.stop();
   }, [selectedLanguage]);
 
@@ -73,8 +69,8 @@ export default function LoginScreen({
     return () => clearInterval(timerRef.current);
   }, [step]);
 
-  // ── Send OTP ──
-  const sendOtp = async () => {
+  // ── Send OTP (Demo mode) ──
+  const sendOtp = () => {
     if (phoneNumber.length < 10) {
       Alert.alert(
         'Invalid Number',
@@ -83,45 +79,36 @@ export default function LoginScreen({
       return;
     }
     setLoading(true);
-    try {
-      const formatted = '+91' + phoneNumber.replace(/\D/g, '');
-      const confirmation = await auth().signInWithPhoneNumber(formatted);
-      setConfirm(confirmation);
+    setTimeout(() => {
+      setLoading(false);
       setStep('otp');
       Tts.speak('OTP sent successfully. Please enter the code.');
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
-    }
+    }, 1500);
   };
 
-  // ── Verify OTP ──
-  const verifyOtp = async () => {
+  // ── Verify OTP (Demo mode) ──
+  const verifyOtp = () => {
     if (otp.length !== 6) {
       Alert.alert('Invalid OTP', 'Please enter the 6 digit OTP');
       return;
     }
     setLoading(true);
-    try {
-      await confirm.confirm(otp);
-      Tts.speak('Login successful. Welcome to Farmix!');
-      setTimeout(() => onLoginSuccess(), 1500);
-    } catch (error) {
-      Alert.alert(
-        'Wrong OTP',
-        'The code you entered is incorrect. Please try again.',
-      );
-    } finally {
+    setTimeout(() => {
       setLoading(false);
-    }
+      if (otp === '324666') {
+        Tts.speak('Login successful. Welcome to Farmix!');
+        setTimeout(() => onLoginSuccess(), 1500);
+      } else {
+        Alert.alert('Wrong OTP', 'Hint: use 123456');
+      }
+    }, 1500);
   };
 
   // ── Resend OTP ──
-  const resendOtp = async () => {
+  const resendOtp = () => {
     if (timer > 0) return;
     setOtp('');
-    await sendOtp();
+    sendOtp();
   };
 
   const speakWelcome = () => {
@@ -234,7 +221,7 @@ export default function LoginScreen({
       ) : (
         <>
           {/* OTP Screen */}
-          <Text style={styles.otpTitle}>Enter OTP</Text>
+          <Text style={styles.otpTitle}>Enter OTP 🔐</Text>
           <Text style={styles.otpSubtitle}>Sent to +91 {phoneNumber}</Text>
 
           <TextInput
