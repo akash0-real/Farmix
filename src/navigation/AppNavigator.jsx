@@ -14,9 +14,19 @@ const SCREEN_MAP = {
   CommunityAlert: CommunityAlertScreen,
 };
 
-export default function AppNavigator() {
+export default function AppNavigator({ selectedLanguage }) {
   const [activeScreen, setActiveScreen] = useState('Home');
   const ActiveComponent = SCREEN_MAP[activeScreen] || HomeScreen;
+
+  const sharedScreenProps =
+    activeScreen === 'Home'
+      ? {
+          selectedLanguage,
+          onCropDoctor: () => setActiveScreen('CropDoctor'),
+          onMandi: () => setActiveScreen('MandiPrices'),
+          onAlerts: () => setActiveScreen('CommunityAlert'),
+        }
+      : {};
 
   return (
     <View style={styles.container}>
@@ -32,7 +42,7 @@ export default function AppNavigator() {
         ))}
       </View>
       <View style={styles.content}>
-        <ActiveComponent />
+        <ActiveComponent {...sharedScreenProps} />
       </View>
     </View>
   );

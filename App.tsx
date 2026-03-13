@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar, StyleSheet } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import LoginScreen from './src/screens/LoginScreen';
 import PreLoginScreen from './src/screens/PreLoginScreen';
+import AppNavigator from './src/navigation/AppNavigator';
 
-type Screen = 'preLogin' | 'login';
+type Screen = 'preLogin' | 'login' | 'app';
 
 function App() {
   const [screen, setScreen] = useState<Screen>('preLogin');
@@ -19,12 +20,15 @@ function App() {
             onGetStarted={() => setScreen('login')}
             onHaveAccount={() => setScreen('login')}
           />
-        ) : (
+        ) : screen === 'login' ? (
           <LoginScreen
             selectedLanguage={selectedLanguage}
             onSelectLanguage={setSelectedLanguage}
             onBack={() => setScreen('preLogin')}
+            onLoginSuccess={() => setScreen('app')}
           />
+        ) : (
+          <AppNavigator selectedLanguage={selectedLanguage} />
         )}
       </SafeAreaView>
     </SafeAreaProvider>
