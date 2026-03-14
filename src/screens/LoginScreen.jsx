@@ -165,8 +165,9 @@ export default function LoginScreen({
         </View>
       </View>
 
-      {step === 'phone' ? (
-        <>
+      <View style={styles.glassCard}>
+        {step === 'phone' ? (
+          <>
           {/* Voice Welcome */}
           <Text style={styles.voiceTitle}>
             {selectedLanguage === 'Hindi'
@@ -206,7 +207,30 @@ export default function LoginScreen({
               placeholderTextColor="#aaa"
             />
           </View>
+          </>
+        ) : (
+          <>
+          {/* OTP Screen */}
+          <Text style={styles.otpTitle}>Enter OTP 🔐</Text>
+          <Text style={styles.otpSubtitle}>Sent to +91 {phoneNumber}</Text>
 
+          <TextInput
+            style={styles.otpInput}
+            placeholder="• • • • • •"
+            keyboardType="number-pad"
+            maxLength={6}
+            value={otp}
+            onChangeText={setOtp}
+            placeholderTextColor="#aaa"
+            textAlign="center"
+            letterSpacing={12}
+          />
+          </>
+        )}
+      </View>
+
+      {step === 'phone' ? (
+        <>
           {/* Send OTP Button */}
           <Pressable
             style={[styles.primaryButton, loading && styles.buttonDisabled]}
@@ -249,22 +273,6 @@ export default function LoginScreen({
         </>
       ) : (
         <>
-          {/* OTP Screen */}
-          <Text style={styles.otpTitle}>Enter OTP 🔐</Text>
-          <Text style={styles.otpSubtitle}>Sent to +91 {phoneNumber}</Text>
-
-          <TextInput
-            style={styles.otpInput}
-            placeholder="• • • • • •"
-            keyboardType="number-pad"
-            maxLength={6}
-            value={otp}
-            onChangeText={setOtp}
-            placeholderTextColor="#aaa"
-            textAlign="center"
-            letterSpacing={12}
-          />
-
           {/* Verify Button */}
           <Pressable
             style={[styles.primaryButton, loading && styles.buttonDisabled]}
@@ -344,7 +352,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   brandText: {
-    fontSize: 27,
+    fontSize: 24,
     color: '#1a223d',
     fontWeight: '800',
   },
@@ -361,11 +369,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  glassCard: {
+    marginBottom: 12,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
   voiceTitle: {
     color: '#1a223d',
     textAlign: 'center',
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 29,
+    lineHeight: 34,
     fontWeight: '900',
     marginTop: 8,
     marginBottom: 10,
@@ -373,7 +396,7 @@ const styles = StyleSheet.create({
   voiceSubtitle: {
     color: '#5f6b7d',
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: 16,
     marginBottom: 18,
     fontWeight: '500',
   },
@@ -381,7 +404,9 @@ const styles = StyleSheet.create({
     width: 156,
     height: 156,
     borderRadius: 78,
-    backgroundColor: '#d4dfd7',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(47, 141, 65, 0.28)',
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
@@ -403,28 +428,28 @@ const styles = StyleSheet.create({
   micHint: {
     textAlign: 'center',
     color: '#888',
-    fontSize: 13,
+    fontSize: 12,
     marginBottom: 20,
   },
   phoneInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: 'transparent',
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#d2d8e0',
+    borderWidth: 1,
+    borderColor: 'rgba(47, 141, 65, 0.3)',
     marginBottom: 16,
     overflow: 'hidden',
   },
   countryCode: {
     paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: '#f0f4f1',
-    borderRightWidth: 2,
-    borderRightColor: '#d2d8e0',
+    backgroundColor: 'transparent',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(47, 141, 65, 0.24)',
   },
   countryCodeText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#1a223d',
   },
@@ -432,7 +457,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 14,
-    fontSize: 18,
+    fontSize: 16,
     color: '#1a223d',
     fontWeight: '600',
   },
@@ -441,6 +466,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 999,
     alignItems: 'center',
+    marginTop: 16,
     marginBottom: 24,
   },
   buttonDisabled: {
@@ -448,7 +474,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#ffffff',
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '800',
   },
   sectionLabel: {
@@ -469,9 +495,9 @@ const styles = StyleSheet.create({
   languageButton: {
     width: '48.2%',
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#d2d8e0',
-    backgroundColor: '#f7f8fa',
+    borderWidth: 1,
+    borderColor: 'rgba(47, 141, 65, 0.24)',
+    backgroundColor: 'transparent',
     paddingVertical: 12,
     alignItems: 'center',
   },
@@ -481,7 +507,7 @@ const styles = StyleSheet.create({
   },
   languageButtonText: {
     color: '#5e6676',
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
   },
   languageButtonTextActive: {
@@ -490,7 +516,7 @@ const styles = StyleSheet.create({
   otpTitle: {
     color: '#1a223d',
     textAlign: 'center',
-    fontSize: 34,
+    fontSize: 29,
     fontWeight: '900',
     marginTop: 40,
     marginBottom: 10,
@@ -498,17 +524,17 @@ const styles = StyleSheet.create({
   otpSubtitle: {
     color: '#5f6b7d',
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: 15,
     marginBottom: 30,
     fontWeight: '500',
   },
   otpInput: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#2f8d41',
+    borderWidth: 1,
+    borderColor: 'rgba(47, 141, 65, 0.45)',
     paddingVertical: 18,
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '800',
     color: '#1a223d',
     marginBottom: 20,
@@ -522,11 +548,11 @@ const styles = StyleSheet.create({
   },
   timerText: {
     color: '#888',
-    fontSize: 14,
+    fontSize: 13,
   },
   resendText: {
     color: '#2f8d41',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   resendDisabled: {
@@ -538,7 +564,7 @@ const styles = StyleSheet.create({
   },
   changeNumberText: {
     color: '#5f6b7d',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   backButton: {
@@ -548,7 +574,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     color: '#5f6b7d',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
 });

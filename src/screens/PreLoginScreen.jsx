@@ -1,206 +1,425 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
-  Image,
+  Animated,
+  ImageBackground,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  Dimensions,
 } from 'react-native';
 
+const { height } = Dimensions.get('window');
+
 const farmImage =
-  'https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1200&q=80';
+  'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80';
 
 export default function PreLoginScreen({ onGetStarted, onHaveAccount }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(60)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 900,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.headerRow}>
-        <View style={styles.brandRow}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoText}>F</Text>
+    <View style={styles.container}>
+      <ImageBackground
+        source={{ uri: farmImage }}
+        style={styles.hero}
+        resizeMode="cover"
+      >
+        {/* Overlays */}
+        <View style={styles.overlayTop} />
+        <View style={styles.overlayBottom} />
+
+        {/* Top bar */}
+        <View style={styles.topBar}>
+          <View style={styles.logoRow}>
+            <View style={styles.logoBox}>
+              <Text style={styles.logoLetter}>F</Text>
+            </View>
+            <Text style={styles.logoName}>Farmix</Text>
           </View>
-          <Text style={styles.brandText}>Farmix</Text>
+          <View style={styles.helpBadge}>
+            <Text style={styles.helpText}>?</Text>
+          </View>
         </View>
-        <View style={styles.helpBadge}>
-          <Text style={styles.helpText}>?</Text>
+
+        {/* AI tag top right */}
+        <View style={styles.floatingTag}>
+          <Text style={styles.floatingTagIcon}>🎤</Text>
+          <Text style={styles.floatingTagText}>Voice Guided Assistant</Text>
         </View>
-      </View>
 
-      <View style={styles.heroCard}>
-        <Image source={{ uri: farmImage }} style={styles.heroImage} />
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>Voice Guided Assistant</Text>
+        {/* Hero text — takes remaining space above sheet */}
+        <View style={styles.heroCenter}>
+          <View style={styles.liveTag}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>AI POWERED</Text>
+          </View>
+          <Text style={styles.heroTitle}>Your Farm,{'\n'}Your Voice.</Text>
+          <Text style={styles.heroSub}>
+            Speak in your language. Farm smarter.
+          </Text>
         </View>
-      </View>
 
-      <Text style={styles.title}>Welcome to Farmix</Text>
-      <Text style={styles.subtitle}>
-        Your voice-powered farm assistant.{"\n"}
-        <Text style={styles.greenText}>No typing needed.</Text> Just talk to your farm.
-      </Text>
+        {/* Glass bottom sheet — fixed height */}
+        <Animated.View
+          style={[
+            styles.glassSheet,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
+          <View style={styles.glassInner}>
+            <View style={styles.handle} />
 
-      <Pressable style={styles.primaryButton} onPress={onGetStarted}>
-        <Text style={styles.primaryButtonText}>Get Started</Text>
-      </Pressable>
+            <View style={styles.trustRow}>
+              <View style={styles.trustDot} />
+              <Text style={styles.trustText}>
+                TRUSTED BY 10K+ FARMERS ACROSS INDIA
+              </Text>
+              <View style={styles.trustDot} />
+            </View>
 
-      <Pressable style={styles.secondaryButton} onPress={onHaveAccount}>
-        <Text style={styles.secondaryButtonText}>I already have an account</Text>
-      </Pressable>
+            <Text style={styles.title}>Welcome to Farmix 🌿</Text>
 
-      <View style={styles.metaRow}>
-        <Text style={styles.metaText}>English</Text>
-        <Text style={styles.metaText}>Audio Help</Text>
-      </View>
+            <Text style={styles.subtitle}>
+              No typing needed. <Text style={styles.highlight}>Just talk</Text>{' '}
+              to your farm assistant.
+            </Text>
 
-      <Text style={styles.trustedText}>TRUSTED BY 10K+ FARMERS</Text>
-    </ScrollView>
+            <View style={styles.pillRow}>
+              {['🌾 12+ Languages', '📡 Offline Mode', '🤖 Gemini AI'].map(
+                p => (
+                  <View key={p} style={styles.pill}>
+                    <Text style={styles.pillText}>{p}</Text>
+                  </View>
+                ),
+              )}
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && { opacity: 0.88 },
+              ]}
+              onPress={onGetStarted}
+            >
+              <Text style={styles.primaryButtonText}>Get Started →</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed && { opacity: 0.75 },
+              ]}
+              onPress={onHaveAccount}
+            >
+              <Text style={styles.secondaryButtonText}>
+                I already have an account
+              </Text>
+            </Pressable>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>English</Text>
+              <View style={styles.footerDot} />
+              <Text style={styles.footerText}>Audio Help</Text>
+              <View style={styles.footerDot} />
+              <Text style={styles.footerText}>Privacy</Text>
+            </View>
+          </View>
+        </Animated.View>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
-    backgroundColor: '#f3f5f4',
   },
-  content: {
-    paddingHorizontal: 16,
-    paddingBottom: 30,
+  hero: {
+    flex: 1,
+    // Fallback background if image fails to load
+    backgroundColor: '#0d3320',
   },
-  headerRow: {
-    marginTop: 8,
-    marginBottom: 14,
+
+  overlayTop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(5, 20, 10, 0.3)',
+  },
+  overlayBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    backgroundColor: 'rgba(5, 25, 12, 0.6)',
+  },
+
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
   },
-  brandRow: {
+  logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
   logoBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: '#2d8a3f',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '800',
+  logoLetter: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '900',
   },
-  brandText: {
-    fontSize: 27,
-    color: '#1a223d',
-    fontWeight: '800',
+  logoName: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '900',
   },
   helpBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#75829b',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   helpText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 15,
     fontWeight: '700',
   },
-  heroCard: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    position: 'relative',
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.14,
-    shadowRadius: 7,
-  },
-  heroImage: {
-    width: '100%',
-    height: 300,
-  },
-  badge: {
+
+  floatingTag: {
     position: 'absolute',
-    left: 12,
-    bottom: 12,
-    borderRadius: 16,
-    backgroundColor: 'rgba(56, 68, 64, 0.82)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    top: 68,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  badgeText: {
-    color: '#ffffff',
-    fontSize: 12,
+  floatingTagIcon: { fontSize: 12 },
+  floatingTagText: {
+    color: '#fff',
+    fontSize: 11,
     fontWeight: '700',
   },
-  title: {
-    color: '#1a223d',
-    fontSize: 40,
+
+  // Hero center — sits between topbar and glass sheet
+  heroCenter: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+  },
+  liveTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(45,138,63,0.35)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(150,255,150,0.3)',
+    marginBottom: 14,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#7eff8a',
+  },
+  liveText: {
+    color: '#7eff8a',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
+  heroTitle: {
+    color: '#fff',
+    fontSize: 44,
     fontWeight: '900',
     textAlign: 'center',
+    lineHeight: 52,
     marginBottom: 10,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  heroSub: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 15,
+    textAlign: 'center',
+  },
+
+  // ── GLASS SHEET ─────────────────────────────────
+  glassSheet: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderBottomWidth: 0,
+  },
+  glassInner: {
+    backgroundColor: 'rgba(8, 28, 15, 0.78)',
+    paddingHorizontal: 22,
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
+
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  trustRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  trustDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#7eff8a',
+  },
+  trustText: {
+    color: '#7eff8a',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 6,
   },
   subtitle: {
-    color: '#576577',
-    fontSize: 22,
-    fontWeight: '600',
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 30,
-    marginBottom: 22,
+    lineHeight: 21,
+    marginBottom: 14,
+    paddingHorizontal: 10,
   },
-  greenText: {
-    color: '#2d8a3f',
+  highlight: {
+    color: '#7eff8a',
     fontWeight: '800',
   },
-  primaryButton: {
-    backgroundColor: '#2f8d41',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  secondaryButton: {
-    backgroundColor: '#dce5dd',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  secondaryButtonText: {
-    color: '#2f8d41',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  metaRow: {
+
+  pillRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 18,
+    flexWrap: 'wrap',
   },
-  metaText: {
-    color: '#8290a4',
-    fontSize: 16,
+  pill: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 20,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  pillText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  primaryButton: {
+    backgroundColor: '#2f8d41',
+    paddingVertical: 15,
+    borderRadius: 999,
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#2f8d41',
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(150,255,150,0.25)',
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+
+  secondaryButton: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingVertical: 14,
+    borderRadius: 999,
+    alignItems: 'center',
+    marginBottom: 18,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  secondaryButtonText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  footerText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
     fontWeight: '600',
   },
-  trustedText: {
-    color: '#a2a8b2',
-    letterSpacing: 2,
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: '700',
+  footerDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
 });
