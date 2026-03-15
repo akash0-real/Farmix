@@ -11,8 +11,7 @@ import {
 
 const { height } = Dimensions.get('window');
 
-const farmImage =
-  'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80';
+const farmImage = require('../assests/images/field.jpg');
 
 export default function PreLoginScreen({ onGetStarted, onHaveAccount }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -35,14 +34,11 @@ export default function PreLoginScreen({ onGetStarted, onHaveAccount }) {
 
   return (
     <View style={styles.container}>
-      <ImageBackground
-        source={{ uri: farmImage }}
-        style={styles.hero}
-        resizeMode="cover"
-      >
+      <ImageBackground source={farmImage} style={styles.hero} resizeMode="cover">
         {/* Overlays */}
         <View style={styles.overlayTop} />
         <View style={styles.overlayBottom} />
+        <View style={styles.overlayDepth} />
 
         {/* Top bar */}
         <View style={styles.topBar}>
@@ -158,15 +154,19 @@ const styles = StyleSheet.create({
 
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 20, 10, 0.3)',
+    backgroundColor: 'rgba(5, 20, 10, 0.2)',
   },
   overlayBottom: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(5, 25, 12, 0.16)',
+  },
+  overlayDepth: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '60%',
-    backgroundColor: 'rgba(5, 25, 12, 0.6)',
+    height: '40%',
+    backgroundColor: 'rgba(5, 25, 12, 0.44)',
   },
 
   topBar: {
