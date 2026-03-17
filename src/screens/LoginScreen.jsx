@@ -12,11 +12,11 @@ import {
 import Tts from 'react-native-tts';
 
 const LANGUAGE_OPTIONS = [
-  { label: 'English', ttsCode: 'en-IN' },
-  { label: 'Hindi', ttsCode: 'hi-IN' },
-  { label: 'Kannada', ttsCode: 'kn-IN' },
-  { label: 'Tamil', ttsCode: 'ta-IN' },
-  { label: 'Telugu', ttsCode: 'te-IN' },
+  { label: 'English', nativeLabel: 'English', ttsCode: 'en-IN' },
+  { label: 'Hindi', nativeLabel: 'हिन्दी', ttsCode: 'hi-IN' },
+  { label: 'Kannada', nativeLabel: 'ಕನ್ನಡ', ttsCode: 'kn-IN' },
+  { label: 'Tamil', nativeLabel: 'தமிழ்', ttsCode: 'ta-IN' },
+  { label: 'Telugu', nativeLabel: 'తెలుగు', ttsCode: 'te-IN' },
   { label: 'More...', ttsCode: 'en-IN' },
 ];
 
@@ -247,7 +247,7 @@ export default function LoginScreen({
           {/* Language Select */}
           <Text style={styles.sectionLabel}>SELECT LANGUAGE</Text>
           <View style={styles.languageGrid}>
-            {LANGUAGE_OPTIONS.map(({ label }) => {
+            {LANGUAGE_OPTIONS.map(({ label, nativeLabel }) => {
               const isSelected = selectedLanguage === label;
               return (
                 <Pressable
@@ -264,7 +264,7 @@ export default function LoginScreen({
                       isSelected && styles.languageButtonTextActive,
                     ]}
                   >
-                    {label}
+                    {nativeLabel || label}
                   </Text>
                 </Pressable>
               );
