@@ -23,7 +23,7 @@ const LANGUAGE_OPTIONS = [
 const WELCOME_MESSAGES = {
   English: 'Welcome to Farmix. Please enter your phone number to continue.',
   Hindi: 'Farmix mein aapka swagat hai. Apna phone number darj karein.',
-  Kannada: 'Farmix ge swagata. Nimage phone number needi.',
+  Kannada: 'Farmix ge swagata. Nimma phone number needi.',
   Tamil: 'Farmix il ungalai varaverkiren. Ungal phone number kodungal.',
   Telugu: 'Farmix ki swaagatam. Meeru phone number ivvandi.',
 };
