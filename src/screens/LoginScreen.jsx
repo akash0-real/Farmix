@@ -8,8 +8,14 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  ImageBackground,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import Tts from 'react-native-tts';
+
+const { height } = Dimensions.get('window');
+const farmImage = require('../assests/images/field.jpg');
 
 const LANGUAGE_OPTIONS = [
   { label: 'English', nativeLabel: 'English', ttsCode: 'en-IN' },
@@ -20,12 +26,33 @@ const LANGUAGE_OPTIONS = [
   { label: 'More...', ttsCode: 'en-IN' },
 ];
 
+const MORE_LANGUAGES = [
+  { label: 'Punjabi', nativeLabel: 'ਪੰਜਾਬੀ', ttsCode: 'pa-IN' },
+  { label: 'Malayalam', nativeLabel: 'മലയാളം', ttsCode: 'ml-IN' },
+  { label: 'Marathi', nativeLabel: 'मराठी', ttsCode: 'mr-IN' },
+  { label: 'Bengali', nativeLabel: 'বাংলা', ttsCode: 'bn-IN' },
+  { label: 'Gujarati', nativeLabel: 'ગુજરાતી', ttsCode: 'gu-IN' },
+  { label: 'Odia', nativeLabel: 'ଓଡ଼ିଆ', ttsCode: 'or-IN' },
+  { label: 'Assamese', nativeLabel: 'অসমীয়া', ttsCode: 'as-IN' },
+  { label: 'Urdu', nativeLabel: 'اردو', ttsCode: 'ur-IN' },
+];
+
+const ALL_LANGUAGES = [...LANGUAGE_OPTIONS.filter(l => l.label !== 'More...'), ...MORE_LANGUAGES];
+
 const WELCOME_MESSAGES = {
   English: 'Welcome to Farmix. Please enter your phone number to continue.',
   Hindi: 'Farmix mein aapka swagat hai. Apna phone number darj karein.',
   Kannada: 'Farmix ge swagata. Nimma phone number needi.',
   Tamil: 'Farmix il ungalai varaverkiren. Ungal phone number kodungal.',
   Telugu: 'Farmix ki swaagatam. Meeru phone number ivvandi.',
+  Punjabi: 'Farmix vich tuhadaa svaagat hai. Apna phone number daao.',
+  Malayalam: 'Farmix il swagatham. Ningalude phone number nalkuka.',
+  Marathi: 'Farmix madhe aapla swagat aahe. Tumcha phone number dya.',
+  Bengali: 'Farmix e apnake swagatam. Apnar phone number din.',
+  Gujarati: 'Farmix ma tamaru swagatam chhe. Tamaro phone number apo.',
+  Odia: 'Farmix re aapnanka swagatam. Aapnanka phone number diyantu.',
+  Assamese: 'Farmix at apunaake swaagotom. Apunar phone number diyok.',
+  Urdu: 'Farmix mein khush aamdeed. Apna phone number darj karein.',
 };
 
 const OTP_SENT_MESSAGES = {
@@ -34,6 +61,14 @@ const OTP_SENT_MESSAGES = {
   Kannada: 'OTP yashasviyagi kaliside. Dayavittu code namoodisi.',
   Tamil: 'OTP vettrikaramaga anuppappattathu. Dayavuseythu code ullidavum.',
   Telugu: 'OTP vijayavantanga pampabadindi. Dayachesi code ivvandi.',
+  Punjabi: 'OTP safalta naal bhejiya gaya. Kirpa karke code daao.',
+  Malayalam: 'OTP vijayakaramaayi ayachu. Dayavayi code nalkuka.',
+  Marathi: 'OTP yashsvi pathavla. Krupaya code dya.',
+  Bengali: 'OTP safol bhabe pathano hoyeche. Dayakore code din.',
+  Gujarati: 'OTP safalta thi mokalay. Maherbani karke code apo.',
+  Odia: 'OTP safala re pathagala. Dayakari code diyantu.',
+  Assamese: 'OTP safal bhabe pathanoo hol. Anugraha kori code diyok.',
+  Urdu: 'OTP kamyabi se bheja gaya. Meherbani karke code darj karein.',
 };
 
 const LOGIN_SUCCESS_MESSAGES = {
@@ -42,6 +77,30 @@ const LOGIN_SUCCESS_MESSAGES = {
   Kannada: 'Login yashasvi. Farmix ge swagata!',
   Tamil: 'Login vettri. Farmix il ungalai varaverkiren!',
   Telugu: 'Login vijayavantam. Farmix ki swaagatam!',
+  Punjabi: 'Login safal. Farmix vich tuhadaa svaagat hai!',
+  Malayalam: 'Login vijayakaram. Farmix il swagatham!',
+  Marathi: 'Login yashsvi. Farmix madhe aapla swagat!',
+  Bengali: 'Login safol. Farmix e apnake swagatam!',
+  Gujarati: 'Login safal. Farmix ma tamaru swagatam!',
+  Odia: 'Login safal. Farmix re aapnanka swagatam!',
+  Assamese: 'Login safal. Farmix at swaagotom!',
+  Urdu: 'Login kamyab. Farmix mein khush aamdeed!',
+};
+
+const GREETING_MESSAGES = {
+  English: 'Welcome',
+  Hindi: 'नमस्ते',
+  Kannada: 'ನಮಸ್ಕಾರ',
+  Tamil: 'வணக்கம்',
+  Telugu: 'నమస్కారం',
+  Punjabi: 'ਸਤ ਸ੍ਰੀ ਅਕਾਲ',
+  Malayalam: 'നമസ്കാരം',
+  Marathi: 'नमस्कार',
+  Bengali: 'নমস্কার',
+  Gujarati: 'નમસ્તે',
+  Odia: 'ନମସ୍କାର',
+  Assamese: 'নমস্কাৰ',
+  Urdu: 'السلام علیکم',
 };
 
 export default function LoginScreen({
@@ -55,10 +114,11 @@ export default function LoginScreen({
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
+  const [showMoreLanguages, setShowMoreLanguages] = useState(false);
   const timerRef = useRef(null);
 
   const speakInSelectedLanguage = message => {
-    const selected = LANGUAGE_OPTIONS.find(l => l.label === selectedLanguage);
+    const selected = ALL_LANGUAGES.find(l => l.label === selectedLanguage);
     const ttsCode = selected?.ttsCode || 'en-IN';
     Tts.setDefaultLanguage(ttsCode);
     Tts.stop();
@@ -67,7 +127,7 @@ export default function LoginScreen({
 
   // ── Speak welcome on mount ──
   useEffect(() => {
-    const selected = LANGUAGE_OPTIONS.find(l => l.label === selectedLanguage);
+    const selected = ALL_LANGUAGES.find(l => l.label === selectedLanguage);
     const ttsCode = selected?.ttsCode || 'en-IN';
     const message =
       WELCOME_MESSAGES[selectedLanguage] || WELCOME_MESSAGES.English;
@@ -146,192 +206,272 @@ export default function LoginScreen({
     speakInSelectedLanguage(message);
   };
 
+  const handleLanguageSelect = label => {
+    if (label === 'More...') {
+      setShowMoreLanguages(true);
+    } else {
+      onSelectLanguage(label);
+    }
+  };
+
+  const handleMoreLanguageSelect = label => {
+    onSelectLanguage(label);
+    setShowMoreLanguages(false);
+  };
+
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <View style={styles.brandRow}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoText}>F</Text>
-          </View>
-          <Text style={styles.brandText}>Farmix</Text>
-        </View>
-        <View style={styles.helpBadge}>
-          <Text style={styles.helpText}>?</Text>
-        </View>
-      </View>
+    <View style={styles.container}>
+      <ImageBackground source={farmImage} style={styles.hero} resizeMode="cover">
+        {/* Overlays */}
+        <View style={styles.overlayTop} />
+        <View style={styles.overlayBottom} />
+        <View style={styles.overlayDepth} />
 
-      <View style={styles.glassCard}>
-        {step === 'phone' ? (
-          <>
-          {/* Voice Welcome */}
-          <Text style={styles.voiceTitle}>
-            {selectedLanguage === 'Hindi'
-              ? 'नमस्ते 👋'
-              : selectedLanguage === 'Kannada'
-              ? 'ನಮಸ್ಕಾರ 👋'
-              : selectedLanguage === 'Tamil'
-              ? 'வணக்கம் 👋'
-              : selectedLanguage === 'Telugu'
-              ? 'నమస్కారం 👋'
-              : 'Welcome 👋'}
-          </Text>
-          <Text style={styles.voiceSubtitle}>
-            Enter your phone number to get started
-          </Text>
-
-          {/* Mic Button */}
-          <Pressable style={styles.micOuter} onPress={speakWelcome}>
-            <View style={styles.micInner}>
-              <Text style={styles.micEmoji}>🎤</Text>
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <View style={styles.brandRow}>
+            <View style={styles.logoBox}>
+              <Text style={styles.logoText}>F</Text>
             </View>
-          </Pressable>
-          <Text style={styles.micHint}>Tap mic to hear instructions</Text>
-
-          {/* Phone Input */}
-          <View style={styles.phoneInputRow}>
-            <View style={styles.countryCode}>
-              <Text style={styles.countryCodeText}>🇮🇳 +91</Text>
-            </View>
-            <TextInput
-              style={styles.phoneInput}
-              placeholder="Enter phone number"
-              keyboardType="phone-pad"
-              maxLength={10}
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholderTextColor="#aaa"
-            />
+            <Text style={styles.brandText}>Farmix</Text>
           </View>
-          </>
-        ) : (
-          <>
-          {/* OTP Screen */}
-          <Text style={styles.otpTitle}>Enter OTP 🔐</Text>
-          <Text style={styles.otpSubtitle}>Sent to +91 {phoneNumber}</Text>
+          <View style={styles.helpBadge}>
+            <Text style={styles.helpText}>?</Text>
+          </View>
+        </View>
 
-          <TextInput
-            style={styles.otpInput}
-            placeholder="• • • • • •"
-            keyboardType="number-pad"
-            maxLength={6}
-            value={otp}
-            onChangeText={setOtp}
-            placeholderTextColor="#aaa"
-            textAlign="center"
-            letterSpacing={12}
-          />
-          </>
-        )}
-      </View>
+        {/* Floating Tag */}
+        <View style={styles.floatingTag}>
+          <Text style={styles.floatingTagIcon}>🔐</Text>
+          <Text style={styles.floatingTagText}>Secure Login</Text>
+        </View>
 
-      {step === 'phone' ? (
-        <>
-          {/* Send OTP Button */}
-          <Pressable
-            style={[styles.primaryButton, loading && styles.buttonDisabled]}
-            onPress={sendOtp}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.primaryButtonText}>Send OTP →</Text>
-            )}
-          </Pressable>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Glass Card */}
+          <View style={styles.glassSheet}>
+            <View style={styles.glassInner}>
+              <View style={styles.handle} />
 
-          {/* Language Select */}
-          <Text style={styles.sectionLabel}>SELECT LANGUAGE</Text>
-          <View style={styles.languageGrid}>
-            {LANGUAGE_OPTIONS.map(({ label, nativeLabel }) => {
-              const isSelected = selectedLanguage === label;
-              return (
-                <Pressable
-                  key={label}
-                  onPress={() => onSelectLanguage(label)}
-                  style={[
-                    styles.languageButton,
-                    isSelected && styles.languageButtonActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.languageButtonText,
-                      isSelected && styles.languageButtonTextActive,
-                    ]}
-                  >
-                    {nativeLabel || label}
+              {step === 'phone' ? (
+                <>
+                  {/* Voice Welcome */}
+                  <Text style={styles.voiceTitle}>
+                    {GREETING_MESSAGES[selectedLanguage] || GREETING_MESSAGES.English} 👋
                   </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </>
-      ) : (
-        <>
-          {/* Verify Button */}
-          <Pressable
-            style={[styles.primaryButton, loading && styles.buttonDisabled]}
-            onPress={verifyOtp}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.primaryButtonText}>Verify OTP ✓</Text>
-            )}
-          </Pressable>
+                  <Text style={styles.voiceSubtitle}>
+                    Enter your phone number to get started
+                  </Text>
 
-          {/* Timer + Resend */}
-          <View style={styles.resendRow}>
-            <Text style={styles.timerText}>
-              {timer > 0 ? `Resend in ${timer}s` : ''}
-            </Text>
-            <Pressable onPress={resendOtp} disabled={timer > 0}>
-              <Text
-                style={[styles.resendText, timer > 0 && styles.resendDisabled]}
+                  {/* Mic Button */}
+                  <Pressable style={styles.micOuter} onPress={speakWelcome}>
+                    <View style={styles.micInner}>
+                      <Text style={styles.micEmoji}>🎤</Text>
+                    </View>
+                  </Pressable>
+                  <Text style={styles.micHint}>Tap mic to hear instructions</Text>
+
+                  {/* Phone Input */}
+                  <View style={styles.phoneInputRow}>
+                    <View style={styles.countryCode}>
+                      <Text style={styles.countryCodeText}>🇮🇳 +91</Text>
+                    </View>
+                    <TextInput
+                      style={styles.phoneInput}
+                      placeholder="Enter phone number"
+                      keyboardType="phone-pad"
+                      maxLength={10}
+                      value={phoneNumber}
+                      onChangeText={setPhoneNumber}
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                    />
+                  </View>
+
+                  {/* Send OTP Button */}
+                  <Pressable
+                    style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                    onPress={sendOtp}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="white" />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>Send OTP →</Text>
+                    )}
+                  </Pressable>
+
+                  {/* Language Select */}
+                  <Text style={styles.sectionLabel}>SELECT LANGUAGE</Text>
+                  <View style={styles.languageGrid}>
+                    {LANGUAGE_OPTIONS.map(({ label, nativeLabel }) => {
+                      const isSelected = selectedLanguage === label;
+                      const isMoreSelected = label === 'More...' && MORE_LANGUAGES.some(l => l.label === selectedLanguage);
+                      return (
+                        <Pressable
+                          key={label}
+                          onPress={() => handleLanguageSelect(label)}
+                          style={[
+                            styles.languageButton,
+                            (isSelected || isMoreSelected) && styles.languageButtonActive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.languageButtonText,
+                              (isSelected || isMoreSelected) && styles.languageButtonTextActive,
+                            ]}
+                          >
+                            {label === 'More...' && isMoreSelected
+                              ? ALL_LANGUAGES.find(l => l.label === selectedLanguage)?.nativeLabel || selectedLanguage
+                              : nativeLabel || label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              ) : (
+                <>
+                  {/* OTP Screen */}
+                  <Text style={styles.otpTitle}>Enter OTP 🔐</Text>
+                  <Text style={styles.otpSubtitle}>Sent to +91 {phoneNumber}</Text>
+
+                  <TextInput
+                    style={styles.otpInput}
+                    placeholder="• • • • • •"
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    value={otp}
+                    onChangeText={setOtp}
+                    placeholderTextColor="rgba(255,255,255,0.5)"
+                    textAlign="center"
+                    letterSpacing={12}
+                  />
+
+                  {/* Verify Button */}
+                  <Pressable
+                    style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                    onPress={verifyOtp}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="white" />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>Verify OTP ✓</Text>
+                    )}
+                  </Pressable>
+
+                  {/* Timer + Resend */}
+                  <View style={styles.resendRow}>
+                    <Text style={styles.timerText}>
+                      {timer > 0 ? `Resend in ${timer}s` : ''}
+                    </Text>
+                    <Pressable onPress={resendOtp} disabled={timer > 0}>
+                      <Text
+                        style={[styles.resendText, timer > 0 && styles.resendDisabled]}
+                      >
+                        Resend OTP
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  {/* Change Number */}
+                  <Pressable
+                    onPress={() => setStep('phone')}
+                    style={styles.changeNumber}
+                  >
+                    <Text style={styles.changeNumberText}>← Change Number</Text>
+                  </Pressable>
+                </>
+              )}
+
+              <Pressable onPress={onBack} style={styles.backButton}>
+                <Text style={styles.backButtonText}>Back</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* More Languages Modal */}
+        <Modal
+          visible={showMoreLanguages}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowMoreLanguages(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHandle} />
+              <Text style={styles.modalTitle}>Select Language</Text>
+              <Text style={styles.modalSubtitle}>Choose your preferred language</Text>
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                <View style={styles.modalLanguageGrid}>
+                  {MORE_LANGUAGES.map(({ label, nativeLabel }) => {
+                    const isSelected = selectedLanguage === label;
+                    return (
+                      <Pressable
+                        key={label}
+                        onPress={() => handleMoreLanguageSelect(label)}
+                        style={[
+                          styles.modalLanguageButton,
+                          isSelected && styles.modalLanguageButtonActive,
+                        ]}
+                      >
+                        <Text style={styles.modalLanguageNative}>{nativeLabel}</Text>
+                        <Text style={styles.modalLanguageLabel}>{label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+              <Pressable
+                style={styles.modalCloseButton}
+                onPress={() => setShowMoreLanguages(false)}
               >
-                Resend OTP
-              </Text>
-            </Pressable>
+                <Text style={styles.modalCloseText}>Close</Text>
+              </Pressable>
+            </View>
           </View>
-
-          {/* Change Number */}
-          <Pressable
-            onPress={() => setStep('phone')}
-            style={styles.changeNumber}
-          >
-            <Text style={styles.changeNumberText}>← Change Number</Text>
-          </Pressable>
-        </>
-      )}
-
-      <Pressable onPress={onBack} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Back</Text>
-      </Pressable>
-    </ScrollView>
+        </Modal>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
-    backgroundColor: '#f3f5f4',
   },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+  hero: {
+    flex: 1,
+    backgroundColor: '#0d3320',
+  },
+  overlayTop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(5, 20, 10, 0.2)',
+  },
+  overlayBottom: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(5, 25, 12, 0.16)',
+  },
+  overlayDepth: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    backgroundColor: 'rgba(5, 25, 12, 0.44)',
   },
   headerRow: {
-    marginTop: 8,
-    marginBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    zIndex: 10,
   },
   brandRow: {
     flexDirection: 'row',
@@ -339,53 +479,91 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   logoBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: '#2d8a3f',
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '800',
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '900',
   },
   brandText: {
-    fontSize: 24,
-    color: '#1a223d',
-    fontWeight: '800',
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '900',
   },
   helpBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#75829b',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   helpText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 15,
     fontWeight: '700',
   },
-  glassCard: {
-    marginBottom: 12,
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    borderWidth: 0,
-    borderColor: 'transparent',
-    paddingHorizontal: 0,
-    paddingTop: 0,
-    paddingBottom: 0,
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+  floatingTag: {
+    position: 'absolute',
+    top: 68,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    zIndex: 10,
+  },
+  floatingTagIcon: { fontSize: 12 },
+  floatingTagText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  scrollView: {
+    flex: 1,
+    marginTop: 40,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+  },
+  glassSheet: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderBottomWidth: 0,
+  },
+  glassInner: {
+    backgroundColor: 'rgba(8, 28, 15, 0.78)',
+    paddingHorizontal: 22,
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   voiceTitle: {
-    color: '#1a223d',
+    color: '#fff',
     textAlign: 'center',
     fontSize: 29,
     lineHeight: 34,
@@ -394,92 +572,106 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   voiceSubtitle: {
-    color: '#5f6b7d',
+    color: 'rgba(255,255,255,0.65)',
     textAlign: 'center',
     fontSize: 16,
     marginBottom: 18,
     fontWeight: '500',
   },
   micOuter: {
-    width: 156,
-    height: 156,
-    borderRadius: 78,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: 'rgba(47, 141, 65, 0.28)',
+    borderColor: 'rgba(126, 255, 138, 0.28)',
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   micInner: {
-    width: 116,
-    height: 116,
-    borderRadius: 58,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: '#2f8d41',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: '#f7f9f8',
+    borderColor: 'rgba(255,255,255,0.15)',
+    shadowColor: '#2f8d41',
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   },
   micEmoji: {
-    fontSize: 48,
+    fontSize: 42,
   },
   micHint: {
     textAlign: 'center',
-    color: '#888',
+    color: 'rgba(255,255,255,0.5)',
     fontSize: 12,
     marginBottom: 20,
   },
   phoneInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(47, 141, 65, 0.3)',
+    borderColor: 'rgba(255,255,255,0.18)',
     marginBottom: 16,
     overflow: 'hidden',
   },
   countryCode: {
     paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRightWidth: 1,
-    borderRightColor: 'rgba(47, 141, 65, 0.24)',
+    borderRightColor: 'rgba(255,255,255,0.15)',
   },
   countryCodeText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1a223d',
+    color: '#fff',
   },
   phoneInput: {
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#1a223d',
+    color: '#fff',
     fontWeight: '600',
   },
   primaryButton: {
     backgroundColor: '#2f8d41',
-    paddingVertical: 16,
+    paddingVertical: 15,
     borderRadius: 999,
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 24,
+    marginBottom: 20,
+    shadowColor: '#2f8d41',
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(150,255,150,0.25)',
   },
   buttonDisabled: {
-    backgroundColor: '#aaa',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 17,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   sectionLabel: {
-    color: '#5d6880',
-    fontSize: 14,
+    color: '#7eff8a',
+    fontSize: 12,
     letterSpacing: 2,
     fontWeight: '800',
     textAlign: 'center',
@@ -496,47 +688,47 @@ const styles = StyleSheet.create({
     width: '48.2%',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(47, 141, 65, 0.24)',
-    backgroundColor: 'transparent',
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     paddingVertical: 12,
     alignItems: 'center',
   },
   languageButtonActive: {
-    borderColor: '#379247',
-    backgroundColor: '#e5efe7',
+    borderColor: '#7eff8a',
+    backgroundColor: 'rgba(126, 255, 138, 0.15)',
   },
   languageButtonText: {
-    color: '#5e6676',
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 15,
     fontWeight: '700',
   },
   languageButtonTextActive: {
-    color: '#2f8d41',
+    color: '#7eff8a',
   },
   otpTitle: {
-    color: '#1a223d',
+    color: '#fff',
     textAlign: 'center',
     fontSize: 29,
     fontWeight: '900',
-    marginTop: 40,
+    marginTop: 20,
     marginBottom: 10,
   },
   otpSubtitle: {
-    color: '#5f6b7d',
+    color: 'rgba(255,255,255,0.65)',
     textAlign: 'center',
     fontSize: 15,
     marginBottom: 30,
     fontWeight: '500',
   },
   otpInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(47, 141, 65, 0.45)',
+    borderColor: 'rgba(255,255,255,0.18)',
     paddingVertical: 18,
     fontSize: 26,
     fontWeight: '800',
-    color: '#1a223d',
+    color: '#fff',
     marginBottom: 20,
   },
   resendRow: {
@@ -547,23 +739,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   timerText: {
-    color: '#888',
+    color: 'rgba(255,255,255,0.5)',
     fontSize: 13,
   },
   resendText: {
-    color: '#2f8d41',
+    color: '#7eff8a',
     fontSize: 13,
     fontWeight: '700',
   },
   resendDisabled: {
-    color: '#aaa',
+    color: 'rgba(255,255,255,0.3)',
   },
   changeNumber: {
     alignSelf: 'center',
     marginBottom: 20,
   },
   changeNumberText: {
-    color: '#5f6b7d',
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -571,10 +763,101 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingVertical: 8,
     paddingHorizontal: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   backButtonText: {
-    color: '#5f6b7d',
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 15,
+    fontWeight: '700',
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: 'rgba(8, 28, 15, 0.95)',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 22,
+    paddingTop: 12,
+    paddingBottom: 34,
+    maxHeight: '80%',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderBottomWidth: 0,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  modalSubtitle: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalScroll: {
+    maxHeight: 300,
+  },
+  modalLanguageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+  },
+  modalLanguageButton: {
+    width: '48.2%',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalLanguageButtonActive: {
+    borderColor: '#7eff8a',
+    backgroundColor: 'rgba(126, 255, 138, 0.15)',
+  },
+  modalLanguageNative: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  modalLanguageLabel: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  modalCloseButton: {
+    marginTop: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingVertical: 14,
+    borderRadius: 999,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  modalCloseText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 16,
     fontWeight: '700',
   },
 });
