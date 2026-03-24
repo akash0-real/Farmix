@@ -13,6 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Tts from 'react-native-tts';
+import { sendOtp as firebaseSendOtp, verifyOtp as firebaseVerifyOtp } from '../services/firebaseService';
 
 const { height } = Dimensions.get('window');
 const farmImage = require('../assests/images/field.jpg');
@@ -115,6 +116,7 @@ export default function LoginScreen({
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
   const [showMoreLanguages, setShowMoreLanguages] = useState(false);
+  const [confirmation, setConfirmation] = useState(null);
   const timerRef = useRef(null);
 
   const speakInSelectedLanguage = message => {
@@ -153,8 +155,8 @@ export default function LoginScreen({
     return () => clearInterval(timerRef.current);
   }, [step]);
 
-  // ── Send OTP (Demo mode) ──
-  const sendOtp = () => {
+  // ── Send OTP using Firebase ──
+  const sendOtp = async () => {
     if (phoneNumber.length < 10) {
       Alert.alert(
         'Invalid Number',
@@ -163,40 +165,51 @@ export default function LoginScreen({
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const formattedNumber = '+91' + phoneNumber;
+      const confirm = await firebaseSendOtp(formattedNumber);
+      setConfirmation(confirm);
       setStep('otp');
       const message =
         OTP_SENT_MESSAGES[selectedLanguage] || OTP_SENT_MESSAGES.English;
       speakInSelectedLanguage(message);
-    }, 1500);
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ── Verify OTP (Demo mode) ──
-  const verifyOtp = () => {
+  // ── Verify OTP using Firebase ──
+  const verifyOtp = async () => {
     if (otp.length !== 6) {
       Alert.alert('Invalid OTP', 'Please enter the 6 digit OTP');
       return;
     }
+    if (!confirmation) {
+      Alert.alert('Error', 'Please request a new OTP');
+      setStep('phone');
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await firebaseVerifyOtp(confirmation, otp);
+      const message =
+        LOGIN_SUCCESS_MESSAGES[selectedLanguage] ||
+        LOGIN_SUCCESS_MESSAGES.English;
+      speakInSelectedLanguage(message);
+      setTimeout(() => onLoginSuccess(), 1500);
+    } catch (error) {
+      Alert.alert('Verification Failed', error.message || 'Invalid OTP. Please try again.');
       setLoading(false);
-      if (otp === '324666') {
-        const message =
-          LOGIN_SUCCESS_MESSAGES[selectedLanguage] ||
-          LOGIN_SUCCESS_MESSAGES.English;
-        speakInSelectedLanguage(message);
-        setTimeout(() => onLoginSuccess(), 1500);
-      } else {
-        Alert.alert('Wrong OTP', 'Hint: use 123456');
-      }
-    }, 1500);
+    }
   };
 
   // ── Resend OTP ──
   const resendOtp = () => {
     if (timer > 0) return;
     setOtp('');
+    setConfirmation(null);
     sendOtp();
   };
 
