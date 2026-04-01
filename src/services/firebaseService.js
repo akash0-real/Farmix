@@ -1,7 +1,32 @@
 // Firebase backend removed - using mock authentication with hardcoded OTP
 // TODO: Re-enable Firebase when ready
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+let AsyncStorage = null;
+const memoryStore = {};
+
+try {
+  const asyncStorageModule = require('@react-native-async-storage/async-storage');
+  AsyncStorage = asyncStorageModule?.default || asyncStorageModule;
+} catch (error) {
+  console.warn(
+    'AsyncStorage native module is unavailable. Falling back to in-memory storage (data resets on app restart).',
+    error?.message || error
+  );
+}
+
+const storage = AsyncStorage || {
+  async getItem(key) {
+    return Object.prototype.hasOwnProperty.call(memoryStore, key)
+      ? memoryStore[key]
+      : null;
+  },
+  async setItem(key, value) {
+    memoryStore[key] = value;
+  },
+  async removeItem(key) {
+    delete memoryStore[key];
+  },
+};
 
 const STORAGE_KEYS = {
   USER_PROFILE: 'user_profile',
@@ -38,7 +63,7 @@ export function getCurrentUserPhone() {
  */
 export async function checkUserExists(uid) {
   try {
-    const profile = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    const profile = await storage.getItem(STORAGE_KEYS.USER_PROFILE);
     if (profile) {
       const parsed = JSON.parse(profile);
       return parsed.onboardingCompleted === true;
@@ -57,7 +82,7 @@ export async function checkUserExists(uid) {
  */
 export async function getUserProfile(uid) {
   try {
-    const profile = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    const profile = await storage.getItem(STORAGE_KEYS.USER_PROFILE);
     if (profile) {
       return JSON.parse(profile);
     }
@@ -76,14 +101,14 @@ export async function getUserProfile(uid) {
  */
 export async function saveUserProfile(uid, data) {
   try {
-    const existing = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    const existing = await storage.getItem(STORAGE_KEYS.USER_PROFILE);
     const existingData = existing ? JSON.parse(existing) : {};
     const updatedProfile = {
       ...existingData,
       ...data,
       updatedAt: new Date().toISOString(),
     };
-    await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedProfile));
+    await storage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedProfile));
   } catch (error) {
     console.error('Error saving user profile:', error);
     throw new Error('Failed to save profile. Please try again.');
@@ -104,7 +129,7 @@ export async function completeOnboarding(uid, profileData) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+    await storage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
   } catch (error) {
     console.error('Error completing onboarding:', error);
     throw new Error('Failed to complete setup. Please try again.');
@@ -152,7 +177,7 @@ export async function verifyOtp(confirmation, otpCode) {
   };
   
   // Save auth state
-  await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(currentUser));
+  await storage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(currentUser));
   
   // Notify listeners
   authStateListeners.forEach(callback => callback(currentUser));
@@ -167,7 +192,7 @@ export async function verifyOtp(confirmation, otpCode) {
 export async function signOut() {
   try {
     currentUser = null;
-    await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_STATE);
+    await storage.removeItem(STORAGE_KEYS.AUTH_STATE);
     // Notify listeners
     authStateListeners.forEach(callback => callback(null));
   } catch (error) {
@@ -186,7 +211,7 @@ export function onAuthStateChanged(callback) {
   authStateListeners.push(callback);
   
   // Check for existing auth state on startup
-  AsyncStorage.getItem(STORAGE_KEYS.AUTH_STATE)
+  storage.getItem(STORAGE_KEYS.AUTH_STATE)
     .then(authState => {
       if (!isSubscribed) return; // Don't call if already unsubscribed
       if (authState) {

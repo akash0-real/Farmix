@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Tts from 'react-native-tts';
 import { useUser } from '../../context/UserContext';
+import { t } from '../../languages/uiText';
 
 const farmImage = require('../../assests/images/field.jpg');
 
@@ -46,7 +47,7 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
 
   const handleContinue = () => {
     if (name.trim().length < 2) {
-      setError('Please enter a valid name');
+      setError(t(selectedLanguage, 'enterValidName'));
       return;
     }
     updateOnboardingData({ name: name.trim() });
@@ -79,7 +80,7 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
               <View style={styles.progressBar}>
                 <View style={[styles.progressFill, { width: '33%' }]} />
               </View>
-              <Text style={styles.progressText}>Step 1 of 3</Text>
+              <Text style={styles.progressText}>{t(selectedLanguage, 'nameStep')}</Text>
             </View>
 
             {/* Glass Card */}
@@ -92,23 +93,23 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
                   <Text style={styles.icon}>👋</Text>
                 </View>
 
-                <Text style={styles.title}>Welcome to Farmix!</Text>
+                <Text style={styles.title}>{t(selectedLanguage, 'onboardingNameTitle')}</Text>
                 <Text style={styles.subtitle}>
-                  Let's personalize your experience. What should we call you?
+                  {t(selectedLanguage, 'onboardingNameSubtitle')}
                 </Text>
 
                 {/* Mic Button */}
                 <Pressable style={styles.micButton} onPress={speakWelcome}>
                   <Text style={styles.micIcon}>🎤</Text>
-                  <Text style={styles.micText}>Tap to hear</Text>
+                  <Text style={styles.micText}>{t(selectedLanguage, 'tapToHear')}</Text>
                 </Pressable>
 
                 {/* Name Input */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>YOUR NAME</Text>
+                  <Text style={styles.inputLabel}>{t(selectedLanguage, 'yourName')}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter your full name"
+                    placeholder={t(selectedLanguage, 'enterFullName')}
                     placeholderTextColor="rgba(255,255,255,0.4)"
                     value={name}
                     onChangeText={(text) => {
@@ -130,12 +131,12 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
                   onPress={handleContinue}
                   disabled={!name.trim()}
                 >
-                  <Text style={styles.continueButtonText}>Continue →</Text>
+                  <Text style={styles.continueButtonText}>{t(selectedLanguage, 'continue')}</Text>
                 </Pressable>
 
                 {/* Info Text */}
                 <Text style={styles.infoText}>
-                  Your information is securely stored and never shared without your permission.
+                  {t(selectedLanguage, 'onboardingInfo')}
                 </Text>
               </View>
             </View>

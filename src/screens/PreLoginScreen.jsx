@@ -6,14 +6,12 @@ import {
   StyleSheet,
   Text,
   View,
-  Dimensions,
 } from 'react-native';
-
-const { height } = Dimensions.get('window');
+import { t } from '../languages/uiText';
 
 const farmImage = require('../assests/images/field.jpg');
 
-export default function PreLoginScreen({ onGetStarted, onHaveAccount }) {
+export default function PreLoginScreen({ selectedLanguage, onGetStarted, onHaveAccount }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(60)).current;
 
@@ -30,7 +28,7 @@ export default function PreLoginScreen({ onGetStarted, onHaveAccount }) {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   return (
     <View style={styles.container}>
@@ -56,18 +54,18 @@ export default function PreLoginScreen({ onGetStarted, onHaveAccount }) {
         {/* AI tag top right */}
         <View style={styles.floatingTag}>
           <Text style={styles.floatingTagIcon}>🎤</Text>
-          <Text style={styles.floatingTagText}>Voice Guided Assistant</Text>
+          <Text style={styles.floatingTagText}>{t(selectedLanguage, 'voiceGuidedAssistant')}</Text>
         </View>
 
         {/* Hero text — takes remaining space above sheet */}
         <View style={styles.heroCenter}>
           <View style={styles.liveTag}>
             <View style={styles.liveDot} />
-            <Text style={styles.liveText}>AI POWERED</Text>
+            <Text style={styles.liveText}>{t(selectedLanguage, 'aiPowered')}</Text>
           </View>
-          <Text style={styles.heroTitle}>Your Farm,{'\n'}Your Voice.</Text>
+          <Text style={styles.heroTitle}>{t(selectedLanguage, 'heroTitle')}</Text>
           <Text style={styles.heroSub}>
-            Speak in your language. Farm smarter.
+            {t(selectedLanguage, 'heroSub')}
           </Text>
         </View>
 
@@ -84,20 +82,19 @@ export default function PreLoginScreen({ onGetStarted, onHaveAccount }) {
             <View style={styles.trustRow}>
               <View style={styles.trustDot} />
               <Text style={styles.trustText}>
-                TRUSTED BY 10K+ FARMERS ACROSS INDIA
+                {t(selectedLanguage, 'trustedBy')}
               </Text>
               <View style={styles.trustDot} />
             </View>
 
-            <Text style={styles.title}>Welcome to Farmix 🌿</Text>
+            <Text style={styles.title}>{t(selectedLanguage, 'welcomeToFarmix')} 🌿</Text>
 
             <Text style={styles.subtitle}>
-              No typing needed. <Text style={styles.highlight}>Just talk</Text>{' '}
-              to your farm assistant.
+              {t(selectedLanguage, 'noTypingNeeded')}
             </Text>
 
             <View style={styles.pillRow}>
-              {['🌾 12+ Languages', '📡 Offline Mode', '🤖 Gemini AI'].map(
+              {[t(selectedLanguage, 'pillLanguages'), t(selectedLanguage, 'pillOffline'), t(selectedLanguage, 'pillAI')].map(
                 p => (
                   <View key={p} style={styles.pill}>
                     <Text style={styles.pillText}>{p}</Text>
@@ -113,7 +110,7 @@ export default function PreLoginScreen({ onGetStarted, onHaveAccount }) {
               ]}
               onPress={onGetStarted}
             >
-              <Text style={styles.primaryButtonText}>Get Started →</Text>
+              <Text style={styles.primaryButtonText}>{t(selectedLanguage, 'getStarted')}</Text>
             </Pressable>
 
             <Pressable
@@ -124,16 +121,16 @@ export default function PreLoginScreen({ onGetStarted, onHaveAccount }) {
               onPress={onHaveAccount}
             >
               <Text style={styles.secondaryButtonText}>
-                I already have an account
+                {t(selectedLanguage, 'haveAccount')}
               </Text>
             </Pressable>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>English</Text>
+              <Text style={styles.footerText}>{selectedLanguage || 'English'}</Text>
               <View style={styles.footerDot} />
-              <Text style={styles.footerText}>Audio Help</Text>
+              <Text style={styles.footerText}>{t(selectedLanguage, 'audioHelp')}</Text>
               <View style={styles.footerDot} />
-              <Text style={styles.footerText}>Privacy</Text>
+              <Text style={styles.footerText}>{t(selectedLanguage, 'privacy')}</Text>
             </View>
           </View>
         </Animated.View>

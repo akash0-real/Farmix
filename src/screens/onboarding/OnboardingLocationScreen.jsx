@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Tts from 'react-native-tts';
 import { useUser } from '../../context/UserContext';
+import { t } from '../../languages/uiText';
 
 const farmImage = require('../../assests/images/field.jpg');
 
@@ -52,7 +53,7 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
 
   const handleContinue = () => {
     if (!village.trim() || !district.trim() || !state) {
-      setError('Please fill in all location details');
+      setError(t(selectedLanguage, 'fillLocationDetails'));
       return;
     }
     updateOnboardingData({
@@ -89,7 +90,7 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
               <View style={styles.progressBar}>
                 <View style={[styles.progressFill, { width: '66%' }]} />
               </View>
-              <Text style={styles.progressText}>Step 2 of 3</Text>
+              <Text style={styles.progressText}>{t(selectedLanguage, 'locationStep')}</Text>
             </View>
 
             {/* Glass Card */}
@@ -102,23 +103,23 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
                   <Text style={styles.icon}>📍</Text>
                 </View>
 
-                <Text style={styles.title}>Farm Location</Text>
+                <Text style={styles.title}>{t(selectedLanguage, 'locationTitle')}</Text>
                 <Text style={styles.subtitle}>
-                  Help us locate your farm to provide relevant weather, prices, and alerts.
+                  {t(selectedLanguage, 'locationSubtitle')}
                 </Text>
 
                 {/* Mic Button */}
                 <Pressable style={styles.micButton} onPress={speakHelp}>
                   <Text style={styles.micIcon}>🎤</Text>
-                  <Text style={styles.micText}>Tap to hear</Text>
+                  <Text style={styles.micText}>{t(selectedLanguage, 'tapToHear')}</Text>
                 </Pressable>
 
                 {/* Village Input */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>VILLAGE / TOWN</Text>
+                  <Text style={styles.inputLabel}>{t(selectedLanguage, 'villageLabel')}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter your village name"
+                    placeholder={t(selectedLanguage, 'villagePlaceholder')}
                     placeholderTextColor="rgba(255,255,255,0.4)"
                     value={village}
                     onChangeText={(text) => {
@@ -131,10 +132,10 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
 
                 {/* District Input */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>DISTRICT</Text>
+                  <Text style={styles.inputLabel}>{t(selectedLanguage, 'districtLabel')}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter your district"
+                    placeholder={t(selectedLanguage, 'districtPlaceholder')}
                     placeholderTextColor="rgba(255,255,255,0.4)"
                     value={district}
                     onChangeText={(text) => {
@@ -147,13 +148,13 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
 
                 {/* State Picker */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>STATE</Text>
+                  <Text style={styles.inputLabel}>{t(selectedLanguage, 'stateLabel')}</Text>
                   <Pressable
                     style={styles.pickerButton}
                     onPress={() => setShowStatePicker(true)}
                   >
                     <Text style={state ? styles.pickerText : styles.pickerPlaceholder}>
-                      {state || 'Select your state'}
+                      {state || t(selectedLanguage, 'statePlaceholder')}
                     </Text>
                     <Text style={styles.pickerArrow}>▼</Text>
                   </Pressable>
@@ -170,7 +171,7 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
                     ]}
                     onPress={onBack}
                   >
-                    <Text style={styles.backButtonText}>← Back</Text>
+                    <Text style={styles.backButtonText}>{t(selectedLanguage, 'backArrow')}</Text>
                   </Pressable>
 
                   <Pressable
@@ -182,7 +183,7 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
                     onPress={handleContinue}
                     disabled={!village.trim() || !district.trim() || !state}
                   >
-                    <Text style={styles.continueButtonText}>Continue →</Text>
+                    <Text style={styles.continueButtonText}>{t(selectedLanguage, 'continue')}</Text>
                   </Pressable>
                 </View>
               </View>
@@ -200,7 +201,7 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>Select State</Text>
+              <Text style={styles.modalTitle}>{t(selectedLanguage, 'selectState')}</Text>
               <FlatList
                 data={INDIAN_STATES}
                 keyExtractor={(item) => item}
@@ -233,7 +234,7 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
                 style={styles.modalCloseButton}
                 onPress={() => setShowStatePicker(false)}
               >
-                <Text style={styles.modalCloseText}>Close</Text>
+                <Text style={styles.modalCloseText}>{t(selectedLanguage, 'close')}</Text>
               </Pressable>
             </View>
           </View>

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Tts from 'react-native-tts';
 import { useUser } from '../../context/UserContext';
+import { t } from '../../languages/uiText';
 
 const farmImage = require('../../assests/images/field.jpg');
 
@@ -74,15 +75,15 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
 
   const handleComplete = async () => {
     if (!farmSize.trim()) {
-      setError('Please enter your farm size');
+      setError(t(selectedLanguage, 'enterFarmSize'));
       return;
     }
     if (!farmType) {
-      setError('Please select your farm type');
+      setError(t(selectedLanguage, 'selectFarmType'));
       return;
     }
     if (selectedCrops.length === 0) {
-      setError('Please select at least one crop');
+      setError(t(selectedLanguage, 'selectOneCrop'));
       return;
     }
 
@@ -95,10 +96,10 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
         language: selectedLanguage,
       });
 
-      Tts.speak("Setup complete! Welcome to Farmix.");
+      Tts.speak(t(selectedLanguage, 'setupComplete'));
       setTimeout(() => onComplete(), 1000);
     } catch (err) {
-      setError(err.message || 'Failed to save. Please try again.');
+      setError(err.message || t(selectedLanguage, 'saveFailed'));
       setLoading(false);
     }
   };
@@ -129,7 +130,7 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
               <View style={styles.progressBar}>
                 <View style={[styles.progressFill, { width: '100%' }]} />
               </View>
-              <Text style={styles.progressText}>Step 3 of 3</Text>
+              <Text style={styles.progressText}>{t(selectedLanguage, 'farmStep')}</Text>
             </View>
 
             {/* Glass Card */}
@@ -142,23 +143,23 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
                   <Text style={styles.icon}>🌾</Text>
                 </View>
 
-                <Text style={styles.title}>Farm Details</Text>
+                <Text style={styles.title}>{t(selectedLanguage, 'farmDetailsTitle')}</Text>
                 <Text style={styles.subtitle}>
-                  Help us understand your farming to provide better recommendations.
+                  {t(selectedLanguage, 'farmDetailsSubtitle')}
                 </Text>
 
                 {/* Mic Button */}
                 <Pressable style={styles.micButton} onPress={speakHelp}>
                   <Text style={styles.micIcon}>🎤</Text>
-                  <Text style={styles.micText}>Tap to hear</Text>
+                  <Text style={styles.micText}>{t(selectedLanguage, 'tapToHear')}</Text>
                 </Pressable>
 
                 {/* Farm Size Input */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>FARM SIZE (ACRES)</Text>
+                  <Text style={styles.inputLabel}>{t(selectedLanguage, 'farmSizeLabel')}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="e.g., 5.5"
+                    placeholder={t(selectedLanguage, 'farmSizePlaceholder')}
                     placeholderTextColor="rgba(255,255,255,0.4)"
                     value={farmSize}
                     onChangeText={(text) => {
@@ -171,7 +172,7 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
 
                 {/* Farm Type Selection */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>FARM TYPE</Text>
+                  <Text style={styles.inputLabel}>{t(selectedLanguage, 'farmTypeLabel')}</Text>
                   <View style={styles.farmTypeRow}>
                     {FARM_TYPES.map((type) => (
                       <Pressable
@@ -200,7 +201,7 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
 
                 {/* Crops Selection */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>PRIMARY CROPS (Select all that apply)</Text>
+                  <Text style={styles.inputLabel}>{t(selectedLanguage, 'cropsLabel')}</Text>
                   <View style={styles.cropsGrid}>
                     {COMMON_CROPS.map((crop) => {
                       const isSelected = selectedCrops.includes(crop.id);
@@ -238,7 +239,7 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
                     onPress={onBack}
                     disabled={loading}
                   >
-                    <Text style={styles.backButtonText}>← Back</Text>
+                    <Text style={styles.backButtonText}>{t(selectedLanguage, 'backArrow')}</Text>
                   </Pressable>
 
                   <Pressable
@@ -253,7 +254,7 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
                     {loading ? (
                       <ActivityIndicator color="#fff" size="small" />
                     ) : (
-                      <Text style={styles.completeButtonText}>Complete Setup ✓</Text>
+                      <Text style={styles.completeButtonText}>{t(selectedLanguage, 'completeSetup')}</Text>
                     )}
                   </Pressable>
                 </View>

@@ -10,99 +10,22 @@ import {
   Alert,
   ImageBackground,
   Modal,
-  Dimensions,
 } from 'react-native';
 import Tts from 'react-native-tts';
 import { sendOtp as firebaseSendOtp, verifyOtp as firebaseVerifyOtp } from '../services/firebaseService';
+import {
+  LANGUAGE_OPTIONS,
+  MORE_LANGUAGES,
+  ALL_LANGUAGES,
+  WELCOME_MESSAGES,
+  OTP_SENT_MESSAGES,
+  LOGIN_SUCCESS_MESSAGES,
+  GREETING_MESSAGES,
+  getTtsCode,
+} from '../languages/languageConfig';
+import { t } from '../languages/uiText';
 
-const { height } = Dimensions.get('window');
 const farmImage = require('../assests/images/field.jpg');
-
-const LANGUAGE_OPTIONS = [
-  { label: 'English', nativeLabel: 'English', ttsCode: 'en-IN' },
-  { label: 'Hindi', nativeLabel: 'हिन्दी', ttsCode: 'hi-IN' },
-  { label: 'Kannada', nativeLabel: 'ಕನ್ನಡ', ttsCode: 'kn-IN' },
-  { label: 'Tamil', nativeLabel: 'தமிழ்', ttsCode: 'ta-IN' },
-  { label: 'Telugu', nativeLabel: 'తెలుగు', ttsCode: 'te-IN' },
-  { label: 'More...', ttsCode: 'en-IN' },
-];
-
-const MORE_LANGUAGES = [
-  { label: 'Punjabi', nativeLabel: 'ਪੰਜਾਬੀ', ttsCode: 'pa-IN' },
-  { label: 'Malayalam', nativeLabel: 'മലയാളം', ttsCode: 'ml-IN' },
-  { label: 'Marathi', nativeLabel: 'मराठी', ttsCode: 'mr-IN' },
-  { label: 'Bengali', nativeLabel: 'বাংলা', ttsCode: 'bn-IN' },
-  { label: 'Gujarati', nativeLabel: 'ગુજરાતી', ttsCode: 'gu-IN' },
-  { label: 'Odia', nativeLabel: 'ଓଡ଼ିଆ', ttsCode: 'or-IN' },
-  { label: 'Assamese', nativeLabel: 'অসমীয়া', ttsCode: 'as-IN' },
-  { label: 'Urdu', nativeLabel: 'اردو', ttsCode: 'ur-IN' },
-];
-
-const ALL_LANGUAGES = [...LANGUAGE_OPTIONS.filter(l => l.label !== 'More...'), ...MORE_LANGUAGES];
-
-const WELCOME_MESSAGES = {
-  English: 'Welcome to Farmix. Please enter your phone number to continue.',
-  Hindi: 'Farmix mein aapka swagat hai. Apna phone number darj karein.',
-  Kannada: 'Farmix ge swagata. Nimma phone number needi.',
-  Tamil: 'Farmix il ungalai varaverkiren. Ungal phone number kodungal.',
-  Telugu: 'Farmix ki swaagatam. Meeru phone number ivvandi.',
-  Punjabi: 'Farmix vich tuhadaa svaagat hai. Apna phone number daao.',
-  Malayalam: 'Farmix il swagatham. Ningalude phone number nalkuka.',
-  Marathi: 'Farmix madhe aapla swagat aahe. Tumcha phone number dya.',
-  Bengali: 'Farmix e apnake swagatam. Apnar phone number din.',
-  Gujarati: 'Farmix ma tamaru swagatam chhe. Tamaro phone number apo.',
-  Odia: 'Farmix re aapnanka swagatam. Aapnanka phone number diyantu.',
-  Assamese: 'Farmix at apunaake swaagotom. Apunar phone number diyok.',
-  Urdu: 'Farmix mein khush aamdeed. Apna phone number darj karein.',
-};
-
-const OTP_SENT_MESSAGES = {
-  English: 'OTP sent successfully. Please enter the code.',
-  Hindi: 'OTP safalta se bheja gaya. Kripya code darj karein.',
-  Kannada: 'OTP yashasviyagi kaliside. Dayavittu code namoodisi.',
-  Tamil: 'OTP vettrikaramaga anuppappattathu. Dayavuseythu code ullidavum.',
-  Telugu: 'OTP vijayavantanga pampabadindi. Dayachesi code ivvandi.',
-  Punjabi: 'OTP safalta naal bhejiya gaya. Kirpa karke code daao.',
-  Malayalam: 'OTP vijayakaramaayi ayachu. Dayavayi code nalkuka.',
-  Marathi: 'OTP yashsvi pathavla. Krupaya code dya.',
-  Bengali: 'OTP safol bhabe pathano hoyeche. Dayakore code din.',
-  Gujarati: 'OTP safalta thi mokalay. Maherbani karke code apo.',
-  Odia: 'OTP safala re pathagala. Dayakari code diyantu.',
-  Assamese: 'OTP safal bhabe pathanoo hol. Anugraha kori code diyok.',
-  Urdu: 'OTP kamyabi se bheja gaya. Meherbani karke code darj karein.',
-};
-
-const LOGIN_SUCCESS_MESSAGES = {
-  English: 'Login successful. Welcome to Farmix!',
-  Hindi: 'Login safal raha. Farmix mein aapka swagat hai!',
-  Kannada: 'Login yashasvi. Farmix ge swagata!',
-  Tamil: 'Login vettri. Farmix il ungalai varaverkiren!',
-  Telugu: 'Login vijayavantam. Farmix ki swaagatam!',
-  Punjabi: 'Login safal. Farmix vich tuhadaa svaagat hai!',
-  Malayalam: 'Login vijayakaram. Farmix il swagatham!',
-  Marathi: 'Login yashsvi. Farmix madhe aapla swagat!',
-  Bengali: 'Login safol. Farmix e apnake swagatam!',
-  Gujarati: 'Login safal. Farmix ma tamaru swagatam!',
-  Odia: 'Login safal. Farmix re aapnanka swagatam!',
-  Assamese: 'Login safal. Farmix at swaagotom!',
-  Urdu: 'Login kamyab. Farmix mein khush aamdeed!',
-};
-
-const GREETING_MESSAGES = {
-  English: 'Welcome',
-  Hindi: 'नमस्ते',
-  Kannada: 'ನಮಸ್ಕಾರ',
-  Tamil: 'வணக்கம்',
-  Telugu: 'నమస్కారం',
-  Punjabi: 'ਸਤ ਸ੍ਰੀ ਅਕਾਲ',
-  Malayalam: 'നമസ്കാരം',
-  Marathi: 'नमस्कार',
-  Bengali: 'নমস্কার',
-  Gujarati: 'નમસ્તે',
-  Odia: 'ନମସ୍କାର',
-  Assamese: 'নমস্কাৰ',
-  Urdu: 'السلام علیکم',
-};
 
 export default function LoginScreen({
   selectedLanguage,
@@ -120,8 +43,7 @@ export default function LoginScreen({
   const timerRef = useRef(null);
 
   const speakInSelectedLanguage = message => {
-    const selected = ALL_LANGUAGES.find(l => l.label === selectedLanguage);
-    const ttsCode = selected?.ttsCode || 'en-IN';
+    const ttsCode = getTtsCode(selectedLanguage);
     Tts.setDefaultLanguage(ttsCode);
     Tts.stop();
     Tts.speak(message);
@@ -129,8 +51,7 @@ export default function LoginScreen({
 
   // ── Speak welcome on mount ──
   useEffect(() => {
-    const selected = ALL_LANGUAGES.find(l => l.label === selectedLanguage);
-    const ttsCode = selected?.ttsCode || 'en-IN';
+    const ttsCode = getTtsCode(selectedLanguage);
     const message =
       WELCOME_MESSAGES[selectedLanguage] || WELCOME_MESSAGES.English;
     Tts.setDefaultLanguage(ttsCode);
@@ -143,12 +64,12 @@ export default function LoginScreen({
     if (step === 'otp') {
       setTimer(30);
       timerRef.current = setInterval(() => {
-        setTimer(t => {
-          if (t <= 1) {
+        setTimer(current => {
+          if (current <= 1) {
             clearInterval(timerRef.current);
             return 0;
           }
-          return t - 1;
+          return current - 1;
         });
       }, 1000);
     }
@@ -159,8 +80,8 @@ export default function LoginScreen({
   const sendOtp = async () => {
     if (phoneNumber.length < 10) {
       Alert.alert(
-        'Invalid Number',
-        'Please enter a valid 10 digit phone number',
+        t(selectedLanguage, 'invalidNumberTitle'),
+        t(selectedLanguage, 'invalidNumberMessage'),
       );
       return;
     }
@@ -174,7 +95,10 @@ export default function LoginScreen({
         OTP_SENT_MESSAGES[selectedLanguage] || OTP_SENT_MESSAGES.English;
       speakInSelectedLanguage(message);
     } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to send OTP. Please try again.');
+      Alert.alert(
+        t(selectedLanguage, 'errorTitle'),
+        error.message || t(selectedLanguage, 'sendOtpError')
+      );
     } finally {
       setLoading(false);
     }
@@ -183,11 +107,11 @@ export default function LoginScreen({
   // ── Verify OTP using Firebase ──
   const verifyOtp = async () => {
     if (otp.length !== 6) {
-      Alert.alert('Invalid OTP', 'Please enter the 6 digit OTP');
+      Alert.alert(t(selectedLanguage, 'invalidOtpTitle'), t(selectedLanguage, 'invalidOtpMessage'));
       return;
     }
     if (!confirmation) {
-      Alert.alert('Error', 'Please request a new OTP');
+      Alert.alert(t(selectedLanguage, 'errorTitle'), t(selectedLanguage, 'requestNewOtp'));
       setStep('phone');
       return;
     }
@@ -200,7 +124,10 @@ export default function LoginScreen({
       speakInSelectedLanguage(message);
       setTimeout(() => onLoginSuccess(), 1500);
     } catch (error) {
-      Alert.alert('Verification Failed', error.message || 'Invalid OTP. Please try again.');
+      Alert.alert(
+        t(selectedLanguage, 'verificationFailed'),
+        error.message || t(selectedLanguage, 'invalidOtpRetry')
+      );
       setLoading(false);
     }
   };
@@ -256,7 +183,7 @@ export default function LoginScreen({
         {/* Floating Tag */}
         <View style={styles.floatingTag}>
           <Text style={styles.floatingTagIcon}>🔐</Text>
-          <Text style={styles.floatingTagText}>Secure Login</Text>
+          <Text style={styles.floatingTagText}>{t(selectedLanguage, 'secureLogin')}</Text>
         </View>
 
         <ScrollView
@@ -276,7 +203,7 @@ export default function LoginScreen({
                     {GREETING_MESSAGES[selectedLanguage] || GREETING_MESSAGES.English} 👋
                   </Text>
                   <Text style={styles.voiceSubtitle}>
-                    Enter your phone number to get started
+                    {t(selectedLanguage, 'enterPhoneToStart')}
                   </Text>
 
                   {/* Mic Button */}
@@ -285,7 +212,7 @@ export default function LoginScreen({
                       <Text style={styles.micEmoji}>🎤</Text>
                     </View>
                   </Pressable>
-                  <Text style={styles.micHint}>Tap mic to hear instructions</Text>
+                  <Text style={styles.micHint}>{t(selectedLanguage, 'tapMicHint')}</Text>
 
                   {/* Phone Input */}
                   <View style={styles.phoneInputRow}>
@@ -294,7 +221,7 @@ export default function LoginScreen({
                     </View>
                     <TextInput
                       style={styles.phoneInput}
-                      placeholder="Enter phone number"
+                      placeholder={t(selectedLanguage, 'enterPhoneNumber')}
                       keyboardType="phone-pad"
                       maxLength={10}
                       value={phoneNumber}
@@ -312,12 +239,12 @@ export default function LoginScreen({
                     {loading ? (
                       <ActivityIndicator color="white" />
                     ) : (
-                      <Text style={styles.primaryButtonText}>Send OTP →</Text>
+                      <Text style={styles.primaryButtonText}>{t(selectedLanguage, 'sendOtp')}</Text>
                     )}
                   </Pressable>
 
                   {/* Language Select */}
-                  <Text style={styles.sectionLabel}>SELECT LANGUAGE</Text>
+                  <Text style={styles.sectionLabel}>{t(selectedLanguage, 'selectLanguage')}</Text>
                   <View style={styles.languageGrid}>
                     {LANGUAGE_OPTIONS.map(({ label, nativeLabel }) => {
                       const isSelected = selectedLanguage === label;
@@ -349,8 +276,10 @@ export default function LoginScreen({
               ) : (
                 <>
                   {/* OTP Screen */}
-                  <Text style={styles.otpTitle}>Enter OTP 🔐</Text>
-                  <Text style={styles.otpSubtitle}>Sent to +91 {phoneNumber}</Text>
+                  <Text style={styles.otpTitle}>{t(selectedLanguage, 'enterOtp')} 🔐</Text>
+                  <Text style={styles.otpSubtitle}>
+                    {t(selectedLanguage, 'sentToPhone', { phone: phoneNumber })}
+                  </Text>
 
                   <TextInput
                     style={styles.otpInput}
@@ -373,20 +302,20 @@ export default function LoginScreen({
                     {loading ? (
                       <ActivityIndicator color="white" />
                     ) : (
-                      <Text style={styles.primaryButtonText}>Verify OTP ✓</Text>
+                      <Text style={styles.primaryButtonText}>{t(selectedLanguage, 'verifyOtp')}</Text>
                     )}
                   </Pressable>
 
                   {/* Timer + Resend */}
                   <View style={styles.resendRow}>
                     <Text style={styles.timerText}>
-                      {timer > 0 ? `Resend in ${timer}s` : ''}
+                      {timer > 0 ? t(selectedLanguage, 'resendIn', { seconds: timer }) : ''}
                     </Text>
                     <Pressable onPress={resendOtp} disabled={timer > 0}>
                       <Text
                         style={[styles.resendText, timer > 0 && styles.resendDisabled]}
                       >
-                        Resend OTP
+                        {t(selectedLanguage, 'resendOtp')}
                       </Text>
                     </Pressable>
                   </View>
@@ -396,13 +325,13 @@ export default function LoginScreen({
                     onPress={() => setStep('phone')}
                     style={styles.changeNumber}
                   >
-                    <Text style={styles.changeNumberText}>← Change Number</Text>
+                    <Text style={styles.changeNumberText}>{t(selectedLanguage, 'changeNumber')}</Text>
                   </Pressable>
                 </>
               )}
 
               <Pressable onPress={onBack} style={styles.backButton}>
-                <Text style={styles.backButtonText}>Back</Text>
+                <Text style={styles.backButtonText}>{t(selectedLanguage, 'back')}</Text>
               </Pressable>
             </View>
           </View>
@@ -418,8 +347,8 @@ export default function LoginScreen({
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>Select Language</Text>
-              <Text style={styles.modalSubtitle}>Choose your preferred language</Text>
+              <Text style={styles.modalTitle}>{t(selectedLanguage, 'selectLanguageTitle')}</Text>
+              <Text style={styles.modalSubtitle}>{t(selectedLanguage, 'choosePreferredLanguage')}</Text>
               <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
                 <View style={styles.modalLanguageGrid}>
                   {MORE_LANGUAGES.map(({ label, nativeLabel }) => {
@@ -444,7 +373,7 @@ export default function LoginScreen({
                 style={styles.modalCloseButton}
                 onPress={() => setShowMoreLanguages(false)}
               >
-                <Text style={styles.modalCloseText}>Close</Text>
+                <Text style={styles.modalCloseText}>{t(selectedLanguage, 'close')}</Text>
               </Pressable>
             </View>
           </View>

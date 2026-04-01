@@ -12,7 +12,7 @@ import { UserProvider, useUser } from './src/context/UserContext';
 type Screen = 'preLogin' | 'login' | 'onboarding1' | 'onboarding2' | 'onboarding3' | 'app';
 
 function AppContent() {
-  const { user, isLoading, isAuthenticated, needsOnboarding } = useUser();
+  const { user, isLoading, isAuthenticated, setLanguage } = useUser();
   const [screen, setScreen] = useState<Screen>('preLogin');
   const [selectedLanguage, setSelectedLanguage] = useState('English');
 
@@ -32,6 +32,12 @@ function AppContent() {
       }
     }
   }, [isLoading, isAuthenticated, user.onboardingCompleted, user.language]);
+
+  useEffect(() => {
+    if (isAuthenticated && user.language !== selectedLanguage) {
+      setLanguage(selectedLanguage);
+    }
+  }, [isAuthenticated, selectedLanguage, setLanguage, user.language]);
 
   // Show loading screen while checking auth state
   if (isLoading && isAuthenticated) {
@@ -62,6 +68,7 @@ function AppContent() {
       <SafeAreaView style={styles.safeArea}>
         {screen === 'preLogin' ? (
           <PreLoginScreen
+            selectedLanguage={selectedLanguage}
             onGetStarted={() => setScreen('login')}
             onHaveAccount={() => setScreen('login')}
           />

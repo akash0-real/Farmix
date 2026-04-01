@@ -3,8 +3,6 @@ import {
   getUserProfile,
   saveUserProfile,
   completeOnboarding,
-  checkUserExists,
-  getCurrentUserUid,
   onAuthStateChanged,
 } from '../services/firebaseService';
 
@@ -48,8 +46,23 @@ export function UserProvider({ children }) {
   // Listen for auth state changes
   useEffect(() => {
     let isMounted = true;
-    
-    const unsubscribe = onAuthStateChanged(async (authUser) => {
+    const authStateSubscriber =
+      typeof onAuthStateChanged === 'function' ? onAuthStateChanged : null;
+
+    if (!authStateSubscriber) {
+      console.error(
+        'Auth listener is unavailable: expected `onAuthStateChanged` to be a function.'
+      );
+      setUser(prev => ({
+        ...prev,
+        isLoading: false,
+      }));
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const unsubscribe = authStateSubscriber(async (authUser) => {
       if (!isMounted) return;
       
       if (authUser) {
@@ -100,7 +113,9 @@ export function UserProvider({ children }) {
 
     return () => {
       isMounted = false;
-      unsubscribe();
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
     };
   }, []);
 
