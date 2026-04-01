@@ -6,6 +6,16 @@ Farmix is a voice-first mobile assistant for small and marginal farmers in India
 
 https://github.com/user-attachments/assets/a24a04d6-4fc9-4137-b89b-6057340c010e
 
+## ScreenShots
+
+<img width="869" height="974" alt="swappy-20260401-140058" src="https://github.com/user-attachments/assets/20fa4d24-ee1b-41bb-b09f-225a170885ea" />
+
+
+<img width="869" height="974" alt="swappy-20260401-140109" src="https://github.com/user-attachments/assets/a469d9d1-0e11-4787-a5c1-8c35509c89c3" />
+
+<img width="869" height="974" alt="swappy-20260401-140122" src="https://github.com/user-attachments/assets/510cc350-4811-4a0e-868a-a1c69ad85430" />
+
+
 ## Problem Statement
 
 Indian farmers commonly face three connected issues:
