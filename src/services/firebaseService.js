@@ -1,14 +1,25 @@
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+// Firebase backend removed - using mock authentication with hardcoded OTP
+// TODO: Re-enable Firebase when ready
 
-const USERS_COLLECTION = 'users';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEYS = {
+  USER_PROFILE: 'user_profile',
+  AUTH_STATE: 'auth_state',
+};
+
+// Hardcoded OTP for testing
+const HARDCODED_OTP = '547333';
+
+// In-memory auth state
+let currentUser = null;
+let authStateListeners = [];
 
 /**
  * Get the current authenticated user's UID
  * @returns {string|null} User UID or null if not authenticated
  */
 export function getCurrentUserUid() {
-  const currentUser = auth().currentUser;
   return currentUser ? currentUser.uid : null;
 }
 
@@ -17,19 +28,22 @@ export function getCurrentUserUid() {
  * @returns {string|null} Phone number or null if not authenticated
  */
 export function getCurrentUserPhone() {
-  const currentUser = auth().currentUser;
   return currentUser ? currentUser.phoneNumber : null;
 }
 
 /**
- * Check if a user profile exists in Firestore
- * @param {string} uid - User's Firebase Auth UID
+ * Check if a user profile exists
+ * @param {string} uid - User's UID
  * @returns {Promise<boolean>} True if profile exists
  */
 export async function checkUserExists(uid) {
   try {
-    const doc = await firestore().collection(USERS_COLLECTION).doc(uid).get();
-    return doc.exists && doc.data()?.onboardingCompleted === true;
+    const profile = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    if (profile) {
+      const parsed = JSON.parse(profile);
+      return parsed.onboardingCompleted === true;
+    }
+    return false;
   } catch (error) {
     console.error('Error checking user exists:', error);
     return false;
@@ -37,15 +51,15 @@ export async function checkUserExists(uid) {
 }
 
 /**
- * Get user profile from Firestore
- * @param {string} uid - User's Firebase Auth UID
+ * Get user profile from local storage
+ * @param {string} uid - User's UID
  * @returns {Promise<Object|null>} User profile or null if not found
  */
 export async function getUserProfile(uid) {
   try {
-    const doc = await firestore().collection(USERS_COLLECTION).doc(uid).get();
-    if (doc.exists) {
-      return { id: doc.id, ...doc.data() };
+    const profile = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    if (profile) {
+      return JSON.parse(profile);
     }
     return null;
   } catch (error) {
@@ -55,23 +69,21 @@ export async function getUserProfile(uid) {
 }
 
 /**
- * Save or update user profile in Firestore
- * @param {string} uid - User's Firebase Auth UID
+ * Save or update user profile in local storage
+ * @param {string} uid - User's UID
  * @param {Object} data - Profile data to save
  * @returns {Promise<void>}
  */
 export async function saveUserProfile(uid, data) {
   try {
-    await firestore()
-      .collection(USERS_COLLECTION)
-      .doc(uid)
-      .set(
-        {
-          ...data,
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+    const existing = await AsyncStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+    const existingData = existing ? JSON.parse(existing) : {};
+    const updatedProfile = {
+      ...existingData,
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedProfile));
   } catch (error) {
     console.error('Error saving user profile:', error);
     throw new Error('Failed to save profile. Please try again.');
@@ -80,24 +92,19 @@ export async function saveUserProfile(uid, data) {
 
 /**
  * Complete user onboarding - save all profile data
- * @param {string} uid - User's Firebase Auth UID
+ * @param {string} uid - User's UID
  * @param {Object} profileData - Complete profile data
  * @returns {Promise<void>}
  */
 export async function completeOnboarding(uid, profileData) {
   try {
-    await firestore()
-      .collection(USERS_COLLECTION)
-      .doc(uid)
-      .set(
-        {
-          ...profileData,
-          onboardingCompleted: true,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+    const profile = {
+      ...profileData,
+      onboardingCompleted: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
   } catch (error) {
     console.error('Error completing onboarding:', error);
     throw new Error('Failed to complete setup. Please try again.');
@@ -105,46 +112,52 @@ export async function completeOnboarding(uid, profileData) {
 }
 
 /**
- * Send OTP to phone number using Firebase Auth
+ * Send OTP to phone number (mock - always succeeds)
  * @param {string} phoneNumber - Phone number with country code (e.g., +919876543210)
  * @returns {Promise<Object>} Confirmation object for OTP verification
  */
 export async function sendOtp(phoneNumber) {
-  try {
-    const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
-    return confirmation;
-  } catch (error) {
-    console.error('Error sending OTP:', error);
-    if (error.code === 'auth/invalid-phone-number') {
-      throw new Error('Invalid phone number. Please check and try again.');
-    } else if (error.code === 'auth/too-many-requests') {
-      throw new Error('Too many attempts. Please try again later.');
-    } else if (error.code === 'auth/network-request-failed') {
-      throw new Error('Network error. Please check your connection.');
-    }
-    throw new Error('Failed to send OTP. Please try again.');
-  }
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Return a mock confirmation object
+  return {
+    phoneNumber,
+    verificationId: 'mock-verification-id-' + Date.now(),
+  };
 }
 
 /**
- * Verify OTP code
+ * Verify OTP code (checks against hardcoded OTP: 547333)
  * @param {Object} confirmation - Confirmation object from sendOtp
  * @param {string} otpCode - 6-digit OTP code
  * @returns {Promise<Object>} User credential
  */
 export async function verifyOtp(confirmation, otpCode) {
-  try {
-    const userCredential = await confirmation.confirm(otpCode);
-    return userCredential;
-  } catch (error) {
-    console.error('Error verifying OTP:', error);
-    if (error.code === 'auth/invalid-verification-code') {
-      throw new Error('Invalid OTP. Please check and try again.');
-    } else if (error.code === 'auth/session-expired') {
-      throw new Error('OTP expired. Please request a new one.');
-    }
-    throw new Error('Failed to verify OTP. Please try again.');
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Check against hardcoded OTP
+  if (otpCode !== HARDCODED_OTP) {
+    throw new Error('Invalid OTP. Please check and try again.');
   }
+  
+  // Create mock user
+  const phoneNumber = confirmation.phoneNumber;
+  const uid = 'user-' + phoneNumber.replace(/\D/g, '');
+  
+  currentUser = {
+    uid,
+    phoneNumber,
+  };
+  
+  // Save auth state
+  await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(currentUser));
+  
+  // Notify listeners
+  authStateListeners.forEach(callback => callback(currentUser));
+  
+  return { user: currentUser };
 }
 
 /**
@@ -153,7 +166,10 @@ export async function verifyOtp(confirmation, otpCode) {
  */
 export async function signOut() {
   try {
-    await auth().signOut();
+    currentUser = null;
+    await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_STATE);
+    // Notify listeners
+    authStateListeners.forEach(callback => callback(null));
   } catch (error) {
     console.error('Error signing out:', error);
     throw new Error('Failed to sign out. Please try again.');
@@ -166,5 +182,33 @@ export async function signOut() {
  * @returns {Function} Unsubscribe function
  */
 export function onAuthStateChanged(callback) {
-  return auth().onAuthStateChanged(callback);
+  let isSubscribed = true;
+  authStateListeners.push(callback);
+  
+  // Check for existing auth state on startup
+  AsyncStorage.getItem(STORAGE_KEYS.AUTH_STATE)
+    .then(authState => {
+      if (!isSubscribed) return; // Don't call if already unsubscribed
+      if (authState) {
+        try {
+          currentUser = JSON.parse(authState);
+          callback(currentUser);
+        } catch (e) {
+          callback(null);
+        }
+      } else {
+        callback(null);
+      }
+    })
+    .catch(() => {
+      if (isSubscribed) {
+        callback(null);
+      }
+    });
+  
+  // Return unsubscribe function
+  return () => {
+    isSubscribed = false;
+    authStateListeners = authStateListeners.filter(cb => cb !== callback);
+  };
 }

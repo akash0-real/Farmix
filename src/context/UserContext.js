@@ -47,7 +47,11 @@ export function UserProvider({ children }) {
 
   // Listen for auth state changes
   useEffect(() => {
+    let isMounted = true;
+    
     const unsubscribe = onAuthStateChanged(async (authUser) => {
+      if (!isMounted) return;
+      
       if (authUser) {
         // User is signed in
         setUser(prev => ({
@@ -58,9 +62,11 @@ export function UserProvider({ children }) {
           isLoading: true,
         }));
 
-        // Load profile from Firestore
+        // Load profile from local storage
         try {
           const profile = await getUserProfile(authUser.uid);
+          if (!isMounted) return;
+          
           if (profile) {
             setUser(prev => ({
               ...prev,
@@ -76,10 +82,12 @@ export function UserProvider({ children }) {
           }
         } catch (error) {
           console.error('Failed to load profile:', error);
-          setUser(prev => ({
-            ...prev,
-            isLoading: false,
-          }));
+          if (isMounted) {
+            setUser(prev => ({
+              ...prev,
+              isLoading: false,
+            }));
+          }
         }
       } else {
         // User is signed out
@@ -90,7 +98,10 @@ export function UserProvider({ children }) {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   // Update onboarding data (used during onboarding flow)
