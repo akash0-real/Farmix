@@ -127,6 +127,7 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
       return;
     }
 
+    setAnalysisResult(null);
     setIsAnalyzing(true);
 
     try {
@@ -146,7 +147,9 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
       const speech = [
         `${tt('soilTypeDetected')}: ${result.soilType}.`,
         result.summary,
-        `${tt('soilBestCrops')}: ${result.bestCrops.slice(0, 3).join(', ')}.`,
+        result.bestCrops?.length
+          ? `${tt('soilBestCrops')}: ${result.bestCrops.slice(0, 3).join(', ')}.`
+          : '',
       ].join(' ');
 
       setTimeout(() => Tts.speak(speech), 500);
@@ -171,8 +174,12 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
       `${tt('soilMoisture')}: ${analysisResult.moisture}.`,
       `${tt('soilPh')}: ${analysisResult.phEstimate}.`,
       analysisResult.summary,
-      `${tt('soilBestCrops')}: ${analysisResult.bestCrops.join(', ')}.`,
-      `${tt('soilImprovements')}: ${analysisResult.improvements.join('. ')}.`,
+      analysisResult.bestCrops?.length
+        ? `${tt('soilBestCrops')}: ${analysisResult.bestCrops.join(', ')}.`
+        : '',
+      analysisResult.improvements?.length
+        ? `${tt('soilImprovements')}: ${analysisResult.improvements.join('. ')}.`
+        : '',
     ].join(' ');
 
     Tts.speak(speech);
@@ -262,7 +269,7 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
             </View>
           )}
 
-          {analysisResult && (
+          {capturedImage && analysisResult && (
             <>
               {/* Soil Type Banner */}
               <View style={styles.soilTypeBanner}>

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   ImageBackground,
+  Linking,
   Modal,
 } from 'react-native';
 import Tts from 'react-native-tts';
@@ -24,6 +25,13 @@ import {
   getTtsCode,
 } from '../languages/languageConfig';
 import { t } from '../languages/uiText';
+import {
+  detectLanguageFromTranscript,
+  destroyVoiceSession,
+  extractDigitsFromSpeech,
+  startVoiceSession,
+  stopVoiceSession,
+} from '../services/voiceAssistantService';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -40,6 +48,7 @@ export default function LoginScreen({
   const [timer, setTimer] = useState(30);
   const [showMoreLanguages, setShowMoreLanguages] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
+  const [isListening, setIsListening] = useState(false);
   const timerRef = useRef(null);
 
   const speakInSelectedLanguage = message => {
@@ -58,6 +67,12 @@ export default function LoginScreen({
     setTimeout(() => Tts.speak(message), 800);
     return () => Tts.stop();
   }, [selectedLanguage]);
+
+  useEffect(() => {
+    return () => {
+      destroyVoiceSession();
+    };
+  }, []);
 
   // ── OTP countdown timer ──
   useEffect(() => {
@@ -159,6 +174,99 @@ export default function LoginScreen({
     setShowMoreLanguages(false);
   };
 
+  const showMicPermissionSettingsPrompt = () => {
+    Alert.alert(
+      t(selectedLanguage, 'voiceInputFailedTitle'),
+      'Microphone access is blocked. Please enable Microphone permission in App Settings.',
+      [
+        { text: t(selectedLanguage, 'cancel') || 'Cancel', style: 'cancel' },
+        {
+          text: 'Open Settings',
+          onPress: () => {
+            Linking.openSettings();
+          },
+        },
+      ],
+    );
+  };
+
+  const handleVoicePhoneInput = async () => {
+    if (step !== 'phone') {
+      return;
+    }
+
+    try {
+      setIsListening(true);
+      await startVoiceSession({
+        locale: getTtsCode(selectedLanguage),
+        autoStopMs: 7000,
+        onResults: (transcript) => {
+          const inferredLanguage = detectLanguageFromTranscript(transcript);
+          if (inferredLanguage && inferredLanguage !== selectedLanguage) {
+            onSelectLanguage(inferredLanguage);
+          }
+
+          const digits = extractDigitsFromSpeech(transcript);
+          if (digits) {
+            setPhoneNumber(digits);
+            speakInSelectedLanguage(
+              t(selectedLanguage, 'voiceNumberDetected', { number: digits }),
+            );
+          } else {
+            Alert.alert(
+              t(selectedLanguage, 'voiceInputFailedTitle'),
+              t(selectedLanguage, 'voiceNumberNotDetected'),
+            );
+          }
+        },
+        onError: (event) => {
+          const rawError =
+            event?.error?.message ||
+            event?.error ||
+            event?.message ||
+            '';
+          const errorText = String(rawError).trim();
+          if (
+            errorText.includes('MIC_PERMISSION_DENIED') ||
+            errorText.toLowerCase().includes('permission')
+          ) {
+            showMicPermissionSettingsPrompt();
+            return;
+          }
+          Alert.alert(
+            t(selectedLanguage, 'voiceInputFailedTitle'),
+            errorText
+              ? `${t(selectedLanguage, 'voiceInputFailedMessage')}\n\n${errorText}`
+              : t(selectedLanguage, 'voiceInputFailedMessage'),
+          );
+        },
+        onEnd: () => {
+          setIsListening(false);
+        },
+      });
+    } catch (error) {
+      setIsListening(false);
+      const message = error?.message ? String(error.message) : '';
+      if (message.includes('VOICE_NATIVE_MISSING') || message.includes('VOICE_ENGINE_UNAVAILABLE')) {
+        Alert.alert(
+          t(selectedLanguage, 'voiceInputFailedTitle'),
+          'Voice input is not available in this build yet. Please reinstall/rebuild the app and try again.',
+        );
+        return;
+      }
+      if (message.includes('MIC_PERMISSION_DENIED')) {
+        showMicPermissionSettingsPrompt();
+        return;
+      }
+      Alert.alert(
+        t(selectedLanguage, 'voiceInputFailedTitle'),
+        message
+          ? `${t(selectedLanguage, 'voiceInputFailedMessage')}\n\n${message}`
+          : t(selectedLanguage, 'voiceInputFailedMessage'),
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ImageBackground source={farmImage} style={styles.hero} resizeMode="cover">
@@ -207,12 +315,23 @@ export default function LoginScreen({
                   </Text>
 
                   {/* Mic Button */}
-                  <Pressable style={styles.micOuter} onPress={speakWelcome}>
+                  <Pressable
+                    style={[
+                      styles.micOuter,
+                      isListening && styles.micOuterListening,
+                    ]}
+                    onPress={handleVoicePhoneInput}
+                    onLongPress={speakWelcome}
+                  >
                     <View style={styles.micInner}>
-                      <Text style={styles.micEmoji}>🎤</Text>
+                      <Text style={styles.micEmoji}>{isListening ? '🎙️' : '🎤'}</Text>
                     </View>
                   </Pressable>
-                  <Text style={styles.micHint}>{t(selectedLanguage, 'tapMicHint')}</Text>
+                  <Text style={styles.micHint}>
+                    {isListening
+                      ? t(selectedLanguage, 'voiceListeningNow')
+                      : t(selectedLanguage, 'tapMicHint')}
+                  </Text>
 
                   {/* Phone Input */}
                   <View style={styles.phoneInputRow}>
@@ -234,7 +353,7 @@ export default function LoginScreen({
                   <Pressable
                     style={[styles.primaryButton, loading && styles.buttonDisabled]}
                     onPress={sendOtp}
-                    disabled={loading}
+                    disabled={loading || isListening}
                   >
                     {loading ? (
                       <ActivityIndicator color="white" />
@@ -292,6 +411,14 @@ export default function LoginScreen({
                     textAlign="center"
                     letterSpacing={12}
                   />
+
+                  {isListening ? (
+                    <Pressable style={styles.stopListeningBtn} onPress={stopVoiceSession}>
+                      <Text style={styles.stopListeningText}>
+                        {t(selectedLanguage, 'voiceStopListening')}
+                      </Text>
+                    </Pressable>
+                  ) : null}
 
                   {/* Verify Button */}
                   <Pressable
@@ -532,6 +659,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
+  micOuterListening: {
+    transform: [{ scale: 1.04 }],
+  },
   micInner: {
     width: 100,
     height: 100,
@@ -555,6 +685,21 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     fontSize: 12,
     marginBottom: 20,
+  },
+  stopListeningBtn: {
+    marginTop: 10,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,107,107,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,107,0.4)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  stopListeningText: {
+    color: '#ffd2d2',
+    fontSize: 12,
+    fontWeight: '700',
   },
   phoneInputRow: {
     flexDirection: 'row',

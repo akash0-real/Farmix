@@ -17,6 +17,12 @@ import { fetchWeatherByLocation } from '../services/weatherService';
 import { useUser } from '../context/UserContext';
 import { t } from '../languages/uiText';
 import { getTtsCode } from '../languages/languageConfig';
+import {
+  destroyVoiceSession,
+  parseVoiceCommand,
+  startVoiceSession,
+  stopVoiceSession,
+} from '../services/voiceAssistantService';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -27,18 +33,26 @@ export default function HomeScreen({
   onAlerts,
   onSoilAnalysis,
   onGovtSchemes,
+  onLogout,
 }) {
   const { user } = useUser();
   const [latestAlert, setLatestAlert] = useState(() => getCommunityAlerts()[0]);
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [isCommandListening, setIsCommandListening] = useState(false);
+  const [lastVoiceText, setLastVoiceText] = useState('');
+  const [lastVoiceActionKey, setLastVoiceActionKey] = useState('');
   const lastSpokenAlertIdRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = subscribeToCommunityAlerts(alerts => {
       setLatestAlert(alerts[0] || null);
     });
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      destroyVoiceSession();
+      Tts.stop();
+    };
   }, []);
 
   useEffect(() => {
@@ -216,6 +230,95 @@ export default function HomeScreen({
     Tts.speak(speech);
   };
 
+  const handleAskAiVoiceCommand = async () => {
+    try {
+      await startVoiceSession({
+        locale: getTtsCode(selectedLanguage),
+        autoStopMs: 6000,
+        onStart: () => {
+          setIsCommandListening(true);
+        },
+        onEnd: () => {
+          setIsCommandListening(false);
+        },
+        onResults: transcript => {
+          setLastVoiceText(transcript);
+          const command = parseVoiceCommand(transcript);
+
+          if (command === 'cropDoctor') {
+            setLastVoiceActionKey('voiceActionScan');
+            Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
+            Tts.stop();
+            Tts.speak(t(selectedLanguage, 'voiceActionScan'));
+            onCropDoctor?.();
+            return;
+          }
+          if (command === 'soilAnalysis') {
+            setLastVoiceActionKey('voiceActionSoil');
+            Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
+            Tts.stop();
+            Tts.speak(t(selectedLanguage, 'voiceActionSoil'));
+            onSoilAnalysis?.();
+            return;
+          }
+          if (command === 'mandi') {
+            setLastVoiceActionKey('voiceActionMandi');
+            Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
+            Tts.stop();
+            Tts.speak(t(selectedLanguage, 'voiceActionMandi'));
+            onMandi?.();
+            return;
+          }
+          if (command === 'alerts') {
+            setLastVoiceActionKey('voiceActionAlerts');
+            Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
+            Tts.stop();
+            Tts.speak(t(selectedLanguage, 'voiceActionAlerts'));
+            onAlerts?.();
+            return;
+          }
+          if (command === 'weather') {
+            setLastVoiceActionKey('voiceActionWeather');
+            handleVoicePlay();
+            return;
+          }
+          if (command === 'govtSchemes') {
+            setLastVoiceActionKey('voiceActionSchemes');
+            Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
+            Tts.stop();
+            Tts.speak(t(selectedLanguage, 'voiceActionSchemes'));
+            onGovtSchemes?.();
+            return;
+          }
+
+          setLastVoiceActionKey('voiceCommandNotUnderstood');
+          Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
+          Tts.stop();
+          Tts.speak(t(selectedLanguage, 'voiceCommandNotUnderstood'));
+        },
+        onError: () => {
+          setIsCommandListening(false);
+          setLastVoiceActionKey('voiceInputFailedMessage');
+          Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
+          Tts.stop();
+          Tts.speak(t(selectedLanguage, 'voiceInputFailedMessage'));
+        },
+      });
+    } catch (error) {
+      setIsCommandListening(false);
+      const message = error?.message ? String(error.message) : '';
+      if (message.includes('VOICE_NATIVE_MISSING') || message.includes('VOICE_ENGINE_UNAVAILABLE')) {
+        Alert.alert(
+          t(selectedLanguage, 'voiceInputFailedTitle'),
+          'Voice input is not available in this build yet. Please reinstall/rebuild the app and try again.',
+        );
+        return;
+      }
+      // Voice input unavailable - fall back to reading farm status
+      handleVoicePlay();
+    }
+  };
+
   const showComingSoon = () => {
     Alert.alert('Coming Soon', 'This feature will be available in the next update.');
   };
@@ -252,8 +355,8 @@ export default function HomeScreen({
               </View>
             </View>
             <View style={styles.headerRight}>
-              <TouchableOpacity style={styles.iconButton} onPress={showComingSoon}>
-                <Text style={styles.iconButtonText}>⚙️</Text>
+              <TouchableOpacity style={styles.iconButton} onPress={onLogout}>
+                <Text style={styles.iconButtonText}>🚪</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.bellButton} onPress={onAlerts}>
                 <Text style={styles.bellIcon}>🔔</Text>
@@ -329,38 +432,35 @@ export default function HomeScreen({
             </View>
           ) : null}
 
-          {/* Voice Assistant Card */}
+          {lastVoiceText ? (
+            <View style={styles.voiceCaptureCard}>
+              <Text style={styles.voiceCaptureLabel}>{t(selectedLanguage, 'voiceHeard')}</Text>
+              <Text style={styles.voiceCaptureText}>"{lastVoiceText}"</Text>
+              {lastVoiceActionKey ? (
+                <Text style={styles.voiceCaptureAction}>
+                  {t(selectedLanguage, 'voiceActionTaken')}: {t(selectedLanguage, lastVoiceActionKey)}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+
+          {/* Yojanas Card */}
           <View style={styles.voiceCard}>
             <View style={styles.voiceCardGlow} />
             <View style={styles.voiceCardContent}>
-              <View style={styles.voiceLeft}>
-                <View style={styles.voiceMicContainer}>
-                  <View style={styles.voiceMicPulse} />
-                  <View style={styles.voiceMic}>
-                    <Text style={styles.voiceMicIcon}>🎤</Text>
-                  </View>
-                </View>
+              <View style={styles.yojanaIconWrap}>
+                <Text style={styles.yojanaIcon}>🏛️</Text>
               </View>
               <View style={styles.voiceCenter}>
                 <View style={styles.voiceHeader}>
-                  <View style={styles.aiTag}>
-                    <Text style={styles.aiTagText}>{t(selectedLanguage, 'aiAssistant')}</Text>
-                  </View>
-                  <View style={styles.liveTag}>
-                    <View style={styles.liveDot} />
-                    <Text style={styles.liveText}>{t(selectedLanguage, 'live')}</Text>
+                  <View style={styles.yojanaTag}>
+                    <Text style={styles.yojanaTagText}>{t(selectedLanguage, 'govtSchemes')}</Text>
                   </View>
                 </View>
-                <Text style={styles.voiceMessage}>
-                  "{t(selectedLanguage, 'farmStatusIs')}{' '}
-                  <Text style={[styles.voiceHighlight, { color: voiceStatusColor }]}>
-                    {voiceStatus}
-                  </Text>
-                  . {t(selectedLanguage, 'tapToHearMore')}"
-                </Text>
+                <Text style={styles.voiceMessage}>{t(selectedLanguage, 'govtSchemesSubtitle')}</Text>
               </View>
-              <TouchableOpacity style={styles.voicePlayBtn} onPress={handleVoicePlay}>
-                <Text style={styles.voicePlayIcon}>▶</Text>
+              <TouchableOpacity style={styles.voicePlayBtn} onPress={onGovtSchemes}>
+                <Text style={styles.voicePlayIcon}>→</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -445,12 +545,25 @@ export default function HomeScreen({
 
             {/* Center FAB */}
             <View style={styles.fabContainer}>
-              <TouchableOpacity style={styles.fab} onPress={handleVoicePlay}>
+              <TouchableOpacity
+                style={[styles.fab, isCommandListening && styles.fabListening]}
+                onPress={handleAskAiVoiceCommand}
+                onLongPress={handleVoicePlay}
+              >
                 <View style={styles.fabInner}>
                   <Text style={styles.fabIcon}>🎤</Text>
                 </View>
               </TouchableOpacity>
-              <Text style={styles.fabLabel}>{t(selectedLanguage, 'askAi')}</Text>
+              <Text style={styles.fabLabel}>
+                {isCommandListening
+                  ? t(selectedLanguage, 'voiceListeningNow')
+                  : t(selectedLanguage, 'askAi')}
+              </Text>
+              {isCommandListening ? (
+                <TouchableOpacity style={styles.stopChip} onPress={stopVoiceSession}>
+                  <Text style={styles.stopChipText}>{t(selectedLanguage, 'voiceStopListening')}</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             <TouchableOpacity style={styles.navTab} onPress={onMandi}>
@@ -763,6 +876,33 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
+  voiceCaptureCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(77,171,247,0.42)',
+    backgroundColor: 'rgba(77,171,247,0.12)',
+    padding: 12,
+  },
+  voiceCaptureLabel: {
+    color: '#b9deff',
+    fontSize: 11,
+    fontWeight: '900',
+    marginBottom: 5,
+  },
+  voiceCaptureText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  voiceCaptureAction: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
   // Voice Card
   voiceCard: {
     marginHorizontal: 16,
@@ -785,6 +925,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     gap: 14,
+  },
+  yojanaIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(77,171,247,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(77,171,247,0.45)',
+  },
+  yojanaIcon: {
+    fontSize: 20,
+  },
+  yojanaTag: {
+    backgroundColor: 'rgba(77,171,247,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  yojanaTagText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#a9d7ff',
+    letterSpacing: 1,
   },
   voiceLeft: {
     alignItems: 'center',
@@ -1080,6 +1245,10 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: 'rgba(8, 24, 14, 0.97)',
   },
+  fabListening: {
+    backgroundColor: '#ff6b6b',
+    shadowColor: '#ff6b6b',
+  },
   fabInner: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1092,5 +1261,17 @@ const styles = StyleSheet.create({
     color: '#7eff8a',
     fontWeight: '800',
     marginTop: 6,
+  },
+  stopChip: {
+    marginTop: 6,
+    backgroundColor: 'rgba(255,107,107,0.22)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  stopChipText: {
+    color: '#ffd2d2',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

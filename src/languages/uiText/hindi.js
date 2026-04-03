@@ -241,7 +241,6 @@ const Hindi = {
   "districtWatchMessage": "{location} के आसपास उच्च-गंभीरता रोग रिपोर्ट बढ़ रही हैं। आज खेत में कार्रवाई करें।",
   "districtWatchAction": "अलर्ट कार्रवाई खोलें",
   "districtWatchVoice": "{location} में जिला निगरानी सक्रिय है। कृपया अलर्ट जांचें और तुरंत कार्रवाई करें।",
-
   "soilAnalysis": "मिट्टी विश्लेषण",
   "soilAnalysisSubtitle": "मिट्टी की फोटो अपलोड करें और जानें मिट्टी का प्रकार और फसल सुझाव",
   "soilNoPhotoYet": "अभी कोई मिट्टी फोटो नहीं",
@@ -282,7 +281,6 @@ const Hindi = {
   "soilNoImageMessage": "विश्लेषण से पहले मिट्टी की फोटो लें।",
   "soilAnalysisFailedTitle": "विश्लेषण विफल",
   "soilType": "मिट्टी का प्रकार",
-
   "govtSchemes": "सरकारी योजनाएं",
   "govtSchemesSubtitle": "PM-KISAN, फसल बीमा और अधिक लाभ",
   "schemeBenefit": "लाभ",
@@ -297,9 +295,23 @@ const Hindi = {
   "schemeNoResults": "कोई योजना नहीं मिली",
   "schemeTip": "टिप",
   "schemeTipText": "आवेदन में मदद के लिए अपने नजदीकी CSC (कॉमन सर्विस सेंटर) जाएं। वे दस्तावेज अपलोड और फॉर्म भरने में मदद कर सकते हैं।",
-
   "offlineMode": "ऑफलाइन मोड",
-  "lastSync": "अंतिम अपडेट"
+  "lastSync": "अंतिम अपडेट",
+  "voiceListeningNow": "सुन रहा हूं...",
+  "voiceStopListening": "बंद करें",
+  "voiceInputFailedTitle": "आवाज़ पहचान विफल",
+  "voiceInputFailedMessage": "आवाज़ नहीं सुन पाए। कृपया फिर से बोलें।",
+  "voiceNumberDetected": "नंबर मिला: {number}",
+  "voiceNumberNotDetected": "फोन नंबर नहीं समझ पाए। कृपया साफ बोलें।",
+  "voiceCommandNotUnderstood": "समझ नहीं पाया। बोलें: फसल स्कैन, मंडी भाव, या अलर्ट।",
+  "voiceHeard": "सुना गया",
+  "voiceActionTaken": "कार्रवाई",
+  "voiceActionScan": "फसल स्कैन खोल रहा हूं",
+  "voiceActionSoil": "मिट्टी जांच खोल रहा हूं",
+  "voiceActionMandi": "मंडी भाव खोल रहा हूं",
+  "voiceActionAlerts": "अलर्ट खोल रहा हूं",
+  "voiceActionWeather": "मौसम पढ़ रहा हूं",
+  "voiceActionSchemes": "सरकारी योजनाएं खोल रहा हूं"
 };
 
 export default Hindi;

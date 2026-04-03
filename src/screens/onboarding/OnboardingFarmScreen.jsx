@@ -15,6 +15,11 @@ import Tts from 'react-native-tts';
 import { useUser } from '../../context/UserContext';
 import { t } from '../../languages/uiText';
 import { getTtsCode } from '../../languages/languageConfig';
+import {
+  destroyVoiceSession,
+  extractDigitsFromSpeech,
+  startVoiceSession,
+} from '../../services/voiceAssistantService';
 
 const farmImage = require('../../assests/images/field.jpg');
 
@@ -25,6 +30,7 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
   const [selectedCrops, setSelectedCrops] = useState(onboardingData.crops || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isListening, setIsListening] = useState(false);
 
   const speakInSelectedLanguage = (message) => {
     const ttsCode = getTtsCode(selectedLanguage);
@@ -67,6 +73,12 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
     }, 300);
     return () => Tts.stop();
   }, [selectedLanguage]);
+
+  useEffect(() => {
+    return () => {
+      destroyVoiceSession();
+    };
+  }, []);
 
   const toggleCrop = (cropId) => {
     setSelectedCrops(prev => {
@@ -114,6 +126,29 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
     speakInSelectedLanguage(getFarmMessage());
   };
 
+  const handleVoiceFarmSizeInput = async () => {
+    try {
+      await startVoiceSession({
+        locale: getTtsCode(selectedLanguage),
+        autoStopMs: 6000,
+        onStart: () => setIsListening(true),
+        onEnd: () => setIsListening(false),
+        onResults: transcript => {
+          const digits = extractDigitsFromSpeech(transcript);
+          if (digits) {
+            setFarmSize(digits);
+            setError('');
+          }
+        },
+        onError: () => {
+          setIsListening(false);
+        },
+      });
+    } catch (error) {
+      setIsListening(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ImageBackground source={farmImage} style={styles.background} resizeMode="cover">
@@ -153,9 +188,17 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
                 </Text>
 
                 {/* Mic Button */}
-                <Pressable style={styles.micButton} onPress={speakHelp}>
+                <Pressable
+                  style={[styles.micButton, isListening && styles.micButtonListening]}
+                  onPress={speakHelp}
+                  onLongPress={handleVoiceFarmSizeInput}
+                >
                   <Text style={styles.micIcon}>🎤</Text>
-                  <Text style={styles.micText}>{t(selectedLanguage, 'tapToHear')}</Text>
+                  <Text style={styles.micText}>
+                    {isListening
+                      ? t(selectedLanguage, 'voiceListeningNow')
+                      : t(selectedLanguage, 'tapToHear')}
+                  </Text>
                 </Pressable>
 
                 {/* Farm Size Input */}
@@ -392,6 +435,10 @@ const styles = StyleSheet.create({
     gap: 5,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
+  },
+  micButtonListening: {
+    borderColor: 'rgba(255,107,107,0.45)',
+    backgroundColor: 'rgba(255,107,107,0.15)',
   },
   micIcon: {
     fontSize: 12,

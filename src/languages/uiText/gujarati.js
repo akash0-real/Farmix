@@ -240,7 +240,6 @@ const Gujarati = {
   "districtWatchMessage": "High-severity disease reports are rising around {location}. Take field action today.",
   "districtWatchAction": "Open Alert Actions",
   "districtWatchVoice": "District watch is active in {location}. Please check alerts and act immediately.",
-
   "soilAnalysis": "Soil Analysis",
   "soilAnalysisSubtitle": "Upload soil photo to know your soil type and get crop recommendations",
   "soilNoPhotoYet": "No soil photo yet",
@@ -282,7 +281,6 @@ const Gujarati = {
   "soilAnalysisFailedTitle": "Analysis Failed",
   "soilType": "Soil Type",
   "scanSoil": "Scan\nSoil",
-
   "govtSchemes": "Govt Schemes",
   "govtSchemesSubtitle": "PM-KISAN, Fasal Bima & more benefits",
   "schemeBenefit": "BENEFIT",
@@ -298,8 +296,22 @@ const Gujarati = {
   "schemeTip": "Pro Tip",
   "schemeTipText": "Visit your nearest CSC (Common Service Center) for help with applications.",
   "offlineMode": "Offline Mode",
-  "lastSync": "Last updated"
-
+  "lastSync": "Last updated",
+  "voiceListeningNow": "Listening...",
+  "voiceStopListening": "Stop Listening",
+  "voiceInputFailedTitle": "Voice Input Failed",
+  "voiceInputFailedMessage": "Could not capture voice. Please try again.",
+  "voiceNumberDetected": "Detected number {number}",
+  "voiceNumberNotDetected": "Could not detect a valid phone number. Please speak digits clearly.",
+  "voiceCommandNotUnderstood": "I could not understand that command. Try saying scan crop, alerts, or mandi prices.",
+  "voiceHeard": "Heard command",
+  "voiceActionTaken": "Action",
+  "voiceActionScan": "Opening crop scan",
+  "voiceActionSoil": "Opening soil analysis",
+  "voiceActionMandi": "Opening mandi prices",
+  "voiceActionAlerts": "Opening alerts",
+  "voiceActionWeather": "Reading weather update",
+  "voiceActionSchemes": "Opening government schemes"
 };
 
 export default Gujarati;

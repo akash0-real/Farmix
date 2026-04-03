@@ -26,28 +26,27 @@ function extractJsonBlock(text) {
 
 function normalizeSoilPayload(payload) {
   return {
-    soilType: payload?.soilType || 'Unknown',
-    soilColor: payload?.soilColor || 'Unknown',
-    texture: payload?.texture || 'Unknown',
-    moisture: payload?.moisture || 'Unknown',
-    phEstimate: payload?.phEstimate || 'Unknown',
-    organicMatter: payload?.organicMatter || 'Unknown',
-    confidence: payload?.confidence || 'Medium',
+    soilType: payload?.soilType || 'N/A',
+    soilColor: payload?.soilColor || 'N/A',
+    texture: payload?.texture || 'N/A',
+    moisture: payload?.moisture || 'N/A',
+    phEstimate: payload?.phEstimate || 'N/A',
+    organicMatter: payload?.organicMatter || 'N/A',
+    confidence: payload?.confidence || 'Unknown',
     summary: payload?.summary || 'Unable to analyze soil from this image.',
     bestCrops: Array.isArray(payload?.bestCrops) && payload.bestCrops.length > 0
       ? payload.bestCrops
-      : ['Consult local agricultural extension for crop recommendations.'],
+      : [],
     avoidCrops: Array.isArray(payload?.avoidCrops) && payload.avoidCrops.length > 0
       ? payload.avoidCrops
       : [],
     improvements: Array.isArray(payload?.improvements) && payload.improvements.length > 0
       ? payload.improvements
-      : ['Test soil pH and nutrient levels at a certified lab.'],
+      : [],
     seasonalTips: Array.isArray(payload?.seasonalTips) && payload.seasonalTips.length > 0
       ? payload.seasonalTips
-      : ['Apply organic compost before planting season.'],
-    disclaimer: payload?.disclaimer ||
-      'AI soil analysis is a preliminary assessment. For accurate results, conduct laboratory soil testing.',
+      : [],
+    disclaimer: payload?.disclaimer || '',
   };
 }
 
@@ -146,7 +145,6 @@ export async function analyzeSoil({
   } catch (error) {
     return normalizeSoilPayload({
       summary: text,
-      soilType: 'Analysis pending',
     });
   }
 }

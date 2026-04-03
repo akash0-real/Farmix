@@ -15,6 +15,10 @@ import Tts from 'react-native-tts';
 import { useUser } from '../../context/UserContext';
 import { t } from '../../languages/uiText';
 import { getTtsCode } from '../../languages/languageConfig';
+import {
+  destroyVoiceSession,
+  startVoiceSession,
+} from '../../services/voiceAssistantService';
 
 const farmImage = require('../../assests/images/field.jpg');
 
@@ -397,6 +401,7 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
   const [state, setState] = useState(onboardingData.state || '');
   const [showStatePicker, setShowStatePicker] = useState(false);
   const [error, setError] = useState('');
+  const [isListening, setIsListening] = useState(false);
 
   const speakInSelectedLanguage = (message) => {
     const ttsCode = getTtsCode(selectedLanguage);
@@ -421,6 +426,12 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
     return () => Tts.stop();
   }, [selectedLanguage]);
 
+  useEffect(() => {
+    return () => {
+      destroyVoiceSession();
+    };
+  }, []);
+
   const handleContinue = () => {
     if (!village.trim() || !district.trim() || !state) {
       setError(t(selectedLanguage, 'fillLocationDetails'));
@@ -436,6 +447,47 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
 
   const speakHelp = () => {
     speakInSelectedLanguage(getLocationMessage());
+  };
+
+  const resolveStateFromTranscript = transcript => {
+    const text = String(transcript || '').toLowerCase();
+    return INDIAN_STATES.find(item => text.includes(item.toLowerCase())) || '';
+  };
+
+  const handleVoiceLocationInput = async () => {
+    try {
+      await startVoiceSession({
+        locale: getTtsCode(selectedLanguage),
+        autoStopMs: 7000,
+        onStart: () => setIsListening(true),
+        onEnd: () => setIsListening(false),
+        onResults: transcript => {
+          const value = String(transcript || '').trim();
+          if (!value) return;
+
+          if (!village.trim()) {
+            setVillage(value);
+            return;
+          }
+
+          if (!district.trim()) {
+            setDistrict(value);
+            return;
+          }
+
+          const matchedState = resolveStateFromTranscript(value);
+          if (matchedState) {
+            setState(matchedState);
+            setError('');
+          }
+        },
+        onError: () => {
+          setIsListening(false);
+        },
+      });
+    } catch (error) {
+      setIsListening(false);
+    }
   };
 
   return (
@@ -477,9 +529,17 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
                 </Text>
 
                 {/* Mic Button */}
-                <Pressable style={styles.micButton} onPress={speakHelp}>
+                <Pressable
+                  style={[styles.micButton, isListening && styles.micButtonListening]}
+                  onPress={speakHelp}
+                  onLongPress={handleVoiceLocationInput}
+                >
                   <Text style={styles.micIcon}>🎤</Text>
-                  <Text style={styles.micText}>{t(selectedLanguage, 'tapToHear')}</Text>
+                  <Text style={styles.micText}>
+                    {isListening
+                      ? t(selectedLanguage, 'voiceListeningNow')
+                      : t(selectedLanguage, 'tapToHear')}
+                  </Text>
                 </Pressable>
 
                 {/* Village Input */}
@@ -736,6 +796,10 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
+  },
+  micButtonListening: {
+    borderColor: 'rgba(255,107,107,0.45)',
+    backgroundColor: 'rgba(255,107,107,0.15)',
   },
   micIcon: {
     fontSize: 14,

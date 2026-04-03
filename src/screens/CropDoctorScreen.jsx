@@ -47,34 +47,6 @@ function isQuotaOrRateLimitError(message) {
   );
 }
 
-function buildDemoFallbackResult(message, translate) {
-  const retrySeconds = extractRetrySeconds(message);
-
-  return {
-    diseaseName: translate('cropDoctorFallbackDiseaseName'),
-    confidence: 'Low',
-    confidenceBand: 'Low',
-    severity: 'Low',
-    crop: translate('cropDoctorUnknownCrop'),
-    modelVersion: 'fallback-demo-mode',
-    summary: retrySeconds
-      ? translate('cropDoctorAiBusyRetrySeconds', { seconds: retrySeconds })
-      : translate('cropDoctorAiBusyRetrySoon'),
-    treatment: [
-      translate('cropDoctorTipRetakeBrightLight'),
-      translate('cropDoctorTipIsolateLeaves'),
-      translate('cropDoctorTipConsultAgronomist'),
-    ],
-    prevention: [
-      translate('cropDoctorPreventionAvoidWetIrrigation'),
-      translate('cropDoctorPreventionSanitizeTools'),
-    ],
-    disclaimer: translate('cropDoctorFallbackDisclaimer'),
-    topPredictions: [],
-    needsRetake: true,
-  };
-}
-
 function ResultSection({ title, items }) {
   if (!items?.length) return null;
   return (
@@ -158,10 +130,14 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
 
   const handleAnalyze = async () => {
     if (!capturedImage?.base64) {
-      Alert.alert(tt('cropDoctorNoImageTitle'), tt('cropDoctorNoImageMessage'));
+      Alert.alert(
+        tt('cropDoctorNoImageTitle'),
+        `${tt('cropDoctorNoImageMessage')}\n${tt('cropDoctorSeverity')}: 0`,
+      );
       return;
     }
 
+    setScanResult(null);
     setIsScanning(true);
 
     try {
@@ -238,8 +214,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
 
       if (isQuotaOrRateLimitError(message)) {
         const retrySeconds = extractRetrySeconds(message);
-        const fallbackResult = buildDemoFallbackResult(message, tt);
-        setScanResult(fallbackResult);
+        setScanResult(null);
 
         Tts.stop();
         setTimeout(() => {
@@ -359,7 +334,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
             </View>
           )}
 
-          {scanResult && (
+          {capturedImage && scanResult && (
             <>
               <View
                 style={[
@@ -400,11 +375,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
                 <View style={styles.confidenceRow}>
                   <View style={styles.confidenceBadge}>
                     <Text style={styles.confidenceNum}>
-                      {scanResult.confidence === 'High'
-                        ? '94.2%'
-                        : scanResult.confidence === 'Medium'
-                        ? '72.5%'
-                        : '45.0%'}
+                      {scanResult.confidence || 'N/A'}
                     </Text>
                     <Text style={styles.confidenceLabel}>{tt('cropDoctorConfidenceScore')}</Text>
                   </View>

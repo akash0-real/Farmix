@@ -8,6 +8,7 @@ import OnboardingNameScreen from './src/screens/onboarding/OnboardingNameScreen'
 import OnboardingLocationScreen from './src/screens/onboarding/OnboardingLocationScreen';
 import OnboardingFarmScreen from './src/screens/onboarding/OnboardingFarmScreen';
 import { UserProvider, useUser } from './src/context/UserContext';
+import { signOut } from './src/services/firebaseService';
 
 type Screen = 'preLogin' | 'login' | 'onboarding1' | 'onboarding2' | 'onboarding3' | 'app';
 
@@ -29,6 +30,8 @@ function AppContent() {
         } else {
           setScreen('onboarding1');
         }
+      } else {
+        setScreen('preLogin');
       }
     }
   }, [isLoading, isAuthenticated, user.onboardingCompleted, user.language]);
@@ -56,6 +59,16 @@ function AppContent() {
 
   const handleOnboardingComplete = () => {
     setScreen('app');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setScreen('preLogin');
+    } catch (error) {
+      // Keep user on current screen if sign out fails.
+      console.warn('Logout failed:', error?.message || error);
+    }
   };
 
   return (
@@ -97,7 +110,10 @@ function AppContent() {
             onBack={() => setScreen('onboarding2')}
           />
         ) : (
-          <AppNavigator selectedLanguage={selectedLanguage} />
+          <AppNavigator
+            selectedLanguage={selectedLanguage}
+            onLogout={handleLogout}
+          />
         )}
       </SafeAreaView>
     </>

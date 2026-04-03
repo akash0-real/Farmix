@@ -14,6 +14,10 @@ import Tts from 'react-native-tts';
 import { useUser } from '../../context/UserContext';
 import { t } from '../../languages/uiText';
 import { getTtsCode } from '../../languages/languageConfig';
+import {
+  destroyVoiceSession,
+  startVoiceSession,
+} from '../../services/voiceAssistantService';
 
 const farmImage = require('../../assests/images/field.jpg');
 
@@ -21,6 +25,7 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
   const { updateOnboardingData, onboardingData } = useUser();
   const [name, setName] = useState(onboardingData.name || '');
   const [error, setError] = useState('');
+  const [isListening, setIsListening] = useState(false);
 
   const speakInSelectedLanguage = (message) => {
     const ttsCode = getTtsCode(selectedLanguage);
@@ -41,6 +46,12 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
     return () => Tts.stop();
   }, [selectedLanguage]);
 
+  useEffect(() => {
+    return () => {
+      destroyVoiceSession();
+    };
+  }, []);
+
   const handleContinue = () => {
     if (name.trim().length < 2) {
       setError(t(selectedLanguage, 'enterValidName'));
@@ -52,6 +63,29 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
 
   const speakWelcome = () => {
     speakInSelectedLanguage(getWelcomeMessage());
+  };
+
+  const handleVoiceNameInput = async () => {
+    try {
+      await startVoiceSession({
+        locale: getTtsCode(selectedLanguage),
+        autoStopMs: 6000,
+        onStart: () => setIsListening(true),
+        onEnd: () => setIsListening(false),
+        onResults: transcript => {
+          const value = String(transcript || '').trim();
+          if (value) {
+            setName(value);
+            setError('');
+          }
+        },
+        onError: () => {
+          setIsListening(false);
+        },
+      });
+    } catch (error) {
+      setIsListening(false);
+    }
   };
 
   return (
@@ -93,9 +127,17 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
                 </Text>
 
                 {/* Mic Button */}
-                <Pressable style={styles.micButton} onPress={speakWelcome}>
+                <Pressable
+                  style={[styles.micButton, isListening && styles.micButtonListening]}
+                  onPress={speakWelcome}
+                  onLongPress={handleVoiceNameInput}
+                >
                   <Text style={styles.micIcon}>🎤</Text>
-                  <Text style={styles.micText}>{t(selectedLanguage, 'tapToHear')}</Text>
+                  <Text style={styles.micText}>
+                    {isListening
+                      ? t(selectedLanguage, 'voiceListeningNow')
+                      : t(selectedLanguage, 'tapToHear')}
+                  </Text>
                 </Pressable>
 
                 {/* Name Input */}
@@ -263,6 +305,10 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
+  },
+  micButtonListening: {
+    borderColor: 'rgba(255,107,107,0.45)',
+    backgroundColor: 'rgba(255,107,107,0.15)',
   },
   micIcon: {
     fontSize: 16,

@@ -18,7 +18,7 @@ const SCREEN_MAP = {
   GovtSchemes: GovtSchemesScreen,
 };
 
-export default function AppNavigator({ selectedLanguage }) {
+export default function AppNavigator({ selectedLanguage, onLogout }) {
   const [activeScreen, setActiveScreen] = useState('Home');
   const ActiveComponent = SCREEN_MAP[activeScreen] || HomeScreen;
 
@@ -43,6 +43,7 @@ export default function AppNavigator({ selectedLanguage }) {
           onAlerts: () => setActiveScreen('CommunityAlert'),
           onSoilAnalysis: () => setActiveScreen('SoilAnalysis'),
           onGovtSchemes: () => setActiveScreen('GovtSchemes'),
+          onLogout,
         }
       : {
           selectedLanguage,

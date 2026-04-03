@@ -186,7 +186,7 @@ export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
 
   const callExpert = async () => {
     try {
-      await Linking.openURL('tel:18001801200');
+      await Linking.openURL('tel:18001801551');
     } catch (error) {
       // ignore call failures gracefully
     }
@@ -469,4 +469,3 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
-
