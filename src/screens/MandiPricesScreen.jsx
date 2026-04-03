@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { t } from '../languages/uiText';
 
-export default function MandiPricesScreen() {
+export default function MandiPricesScreen({ selectedLanguage }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Mandi Prices</Text>
-      <Text style={styles.subtitle}>Live market pricing updates.</Text>
+      <Text style={styles.title}>{t(selectedLanguage, 'mandiPricesTitle')}</Text>
+      <Text style={styles.subtitle}>{t(selectedLanguage, 'liveMarketUpdates')}</Text>
     </View>
   );
 }

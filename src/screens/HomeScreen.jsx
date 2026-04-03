@@ -6,106 +6,15 @@ import {
   TouchableOpacity,
   ScrollView,
   ImageBackground,
-  Dimensions,
 } from 'react-native';
 import {
   getCommunityAlerts,
   subscribeToCommunityAlerts,
 } from '../services/alertService';
 import { useUser } from '../context/UserContext';
+import { t } from '../languages/uiText';
 
-const { width } = Dimensions.get('window');
 const farmImage = require('../assests/images/field.jpg');
-
-const dashboardItems = [
-  {
-    icon: '🌿',
-    title: 'Crop Doctor',
-    subtitle: 'AI Disease Detection',
-    action: 'cropDoctor',
-    status: 'HEALTHY',
-    statusColor: '#7eff8a',
-    metric: '98%',
-    metricLabel: 'Health Score',
-    trend: '+2%',
-    trendUp: true,
-  },
-  {
-    icon: '🪣',
-    title: 'Soil Health',
-    subtitle: 'Nutrient Analysis',
-    action: 'home',
-    status: 'OPTIMAL',
-    statusColor: '#7eff8a',
-    metric: 'pH 6.8',
-    metricLabel: 'Soil Quality',
-    trend: 'Stable',
-    trendUp: true,
-  },
-  {
-    icon: '📅',
-    title: 'Farm Planner',
-    subtitle: 'Task Management',
-    action: 'home',
-    status: 'PENDING',
-    statusColor: '#ffd966',
-    metric: '3',
-    metricLabel: 'Tasks Due',
-    trend: 'Today',
-    trendUp: false,
-  },
-  {
-    icon: '🛒',
-    title: 'Buyer Connect',
-    subtitle: 'Market Linkage',
-    action: 'home',
-    status: 'ACTIVE',
-    statusColor: '#7eff8a',
-    metric: '12',
-    metricLabel: 'Active Buyers',
-    trend: '+5 new',
-    trendUp: true,
-  },
-  {
-    icon: '⚠️',
-    title: 'Alert Center',
-    subtitle: 'Community Warnings',
-    action: 'alerts',
-    status: 'URGENT',
-    statusColor: '#ff6b6b',
-    metric: '2',
-    metricLabel: 'Active Alerts',
-    trend: 'Nearby',
-    trendUp: false,
-  },
-  {
-    icon: '💰',
-    title: 'Mandi Prices',
-    subtitle: 'Live Market Rates',
-    action: 'mandi',
-    status: 'HIGH',
-    statusColor: '#ffd966',
-    metric: '₹2,450',
-    metricLabel: 'Wheat/Quintal',
-    trend: '+₹120',
-    trendUp: true,
-  },
-];
-
-const CROP_ICONS = {
-  wheat: '🌾',
-  rice: '🍚',
-  cotton: '☁️',
-  sugarcane: '🎋',
-  maize: '🌽',
-  soybean: '🫘',
-  groundnut: '🥜',
-  pulses: '🫛',
-  vegetables: '🥬',
-  fruits: '🍎',
-  millets: '🌿',
-  other: '🌱',
-};
 
 export default function HomeScreen({
   selectedLanguage,
@@ -123,35 +32,60 @@ export default function HomeScreen({
     return unsubscribe;
   }, []);
 
-  // Get greeting based on time of day
+  // Get greeting based on time of day with translation
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return t(selectedLanguage, 'goodMorning');
+    if (hour < 17) return t(selectedLanguage, 'goodAfternoon');
+    return t(selectedLanguage, 'goodEvening');
   };
 
-  // Dynamic stats based on user data
+  // Dynamic stats based on user data with translations
   const statsData = useMemo(() => [
     {
-      label: 'Total Area',
+      label: t(selectedLanguage, 'totalArea'),
       value: user.farmSize || '0',
-      unit: 'Acres',
+      unit: t(selectedLanguage, 'acres'),
       icon: '🌾',
     },
     {
-      label: 'Farm Type',
+      label: t(selectedLanguage, 'farmType'),
       value: user.farmType === 'irrigated' ? '💧' : user.farmType === 'rainfed' ? '🌧️' : '🔄',
       unit: user.farmType ? user.farmType.charAt(0).toUpperCase() + user.farmType.slice(1) : 'N/A',
       icon: '🏡',
     },
     {
-      label: 'Crops',
+      label: t(selectedLanguage, 'crops'),
       value: user.crops?.length || 0,
-      unit: 'Types',
+      unit: t(selectedLanguage, 'types'),
       icon: '🌱',
     },
-  ], [user]);
+  ], [user, selectedLanguage]);
+
+  // Simplified dashboard - only 3 essential features
+  const dashboardItems = useMemo(() => [
+    {
+      icon: '🌿',
+      title: t(selectedLanguage, 'cropDoctor'),
+      subtitle: t(selectedLanguage, 'aiDiseaseDetection'),
+      action: 'cropDoctor',
+      color: '#7eff8a',
+    },
+    {
+      icon: '💰',
+      title: t(selectedLanguage, 'mandiPrices'),
+      subtitle: t(selectedLanguage, 'liveMarketRates'),
+      action: 'mandi',
+      color: '#ffd966',
+    },
+    {
+      icon: '⚠️',
+      title: t(selectedLanguage, 'alertCenter'),
+      subtitle: t(selectedLanguage, 'communityWarnings'),
+      action: 'alerts',
+      color: '#ff6b6b',
+    },
+  ], [selectedLanguage]);
 
   const handlePress = action => {
     if (action === 'cropDoctor') onCropDoctor();
@@ -200,7 +134,7 @@ export default function HomeScreen({
                   <View style={styles.premiumIcon}>
                     <Text style={styles.premiumStar}>⭐</Text>
                   </View>
-                  <Text style={styles.headerSub}>Premium Member</Text>
+                  <Text style={styles.headerSub}>{t(selectedLanguage, 'premiumMember')}</Text>
                 </View>
               </View>
             </View>
@@ -244,19 +178,19 @@ export default function HomeScreen({
               <View style={styles.voiceCenter}>
                 <View style={styles.voiceHeader}>
                   <View style={styles.aiTag}>
-                    <Text style={styles.aiTagText}>AI ASSISTANT</Text>
+                    <Text style={styles.aiTagText}>{t(selectedLanguage, 'aiAssistant')}</Text>
                   </View>
                   <View style={styles.liveTag}>
                     <View style={styles.liveDot} />
-                    <Text style={styles.liveText}>LIVE</Text>
+                    <Text style={styles.liveText}>{t(selectedLanguage, 'live')}</Text>
                   </View>
                 </View>
                 <Text style={styles.voiceMessage}>
-                  "Farm status is{' '}
+                  "{t(selectedLanguage, 'farmStatusIs')}{' '}
                   <Text style={[styles.voiceHighlight, { color: voiceStatusColor }]}>
                     {voiceStatus}
                   </Text>
-                  . Tap to hear more."
+                  . {t(selectedLanguage, 'tapToHearMore')}"
                 </Text>
               </View>
               <TouchableOpacity style={styles.voicePlayBtn}>
@@ -265,113 +199,60 @@ export default function HomeScreen({
             </View>
           </View>
 
-          {/* Dashboard Section */}
+          {/* Dashboard Section - Simplified */}
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionTitle}>Farm Dashboard</Text>
-              <Text style={styles.sectionSubtitle}>Monitor & manage your farm</Text>
+              <Text style={styles.sectionTitle}>{t(selectedLanguage, 'farmDashboard')}</Text>
+              <Text style={styles.sectionSubtitle}>{t(selectedLanguage, 'monitorFarm')}</Text>
             </View>
-            <TouchableOpacity style={styles.viewAllBtn}>
-              <Text style={styles.viewAllText}>View All</Text>
-              <Text style={styles.viewAllArrow}>→</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Dashboard Grid */}
-          <View style={styles.dashboardGrid}>
+          {/* Simplified Dashboard - 3 Large Cards */}
+          <View style={styles.simpleDashboard}>
             {dashboardItems.map((item, index) => (
               <TouchableOpacity
                 key={index}
-                style={styles.dashboardCard}
+                style={[styles.simpleCard, { borderLeftColor: item.color }]}
                 onPress={() => handlePress(item.action)}
                 activeOpacity={0.85}
               >
-                {/* Card Header */}
-                <View style={styles.cardTop}>
-                  <View style={[styles.cardIconBox, { borderColor: item.statusColor + '40' }]}>
-                    <Text style={styles.cardIcon}>{item.icon}</Text>
-                  </View>
-                  <View style={[styles.statusPill, { backgroundColor: item.statusColor + '20' }]}>
-                    <View style={[styles.statusDot, { backgroundColor: item.statusColor }]} />
-                    <Text style={[styles.statusLabel, { color: item.statusColor }]}>
-                      {item.status}
-                    </Text>
-                  </View>
+                <View style={[styles.simpleIconBox, { backgroundColor: item.color + '20' }]}>
+                  <Text style={styles.simpleIcon}>{item.icon}</Text>
                 </View>
-
-                {/* Card Info */}
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
-
-                {/* Metric Display */}
-                <View style={styles.metricContainer}>
-                  <View style={styles.metricLeft}>
-                    <Text style={styles.metricValue}>{item.metric}</Text>
-                    <Text style={styles.metricLabel}>{item.metricLabel}</Text>
-                  </View>
-                  <View style={[
-                    styles.trendBadge,
-                    { backgroundColor: item.trendUp ? 'rgba(126,255,138,0.15)' : 'rgba(255,217,102,0.15)' }
-                  ]}>
-                    <Text style={[
-                      styles.trendText,
-                      { color: item.trendUp ? '#7eff8a' : '#ffd966' }
-                    ]}>
-                      {item.trendUp ? '↑' : '•'} {item.trend}
-                    </Text>
-                  </View>
+                <View style={styles.simpleCardContent}>
+                  <Text style={styles.simpleCardTitle}>{item.title}</Text>
+                  <Text style={styles.simpleCardSubtitle}>{item.subtitle}</Text>
                 </View>
-
-                {/* Card Footer */}
-                <View style={styles.cardFooter}>
-                  <Text style={styles.tapHint}>Tap to explore</Text>
-                  <View style={styles.arrowCircle}>
-                    <Text style={styles.arrowIcon}>→</Text>
-                  </View>
+                <View style={styles.simpleArrow}>
+                  <Text style={styles.simpleArrowText}>→</Text>
                 </View>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Quick Actions */}
+          {/* Quick Actions - Simplified */}
           <View style={styles.quickSection}>
-            <Text style={styles.quickTitle}>Quick Actions</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.quickScroll}
-            >
+            <Text style={styles.quickTitle}>{t(selectedLanguage, 'quickActions')}</Text>
+            <View style={styles.quickGrid}>
               <TouchableOpacity style={styles.quickCard} onPress={onCropDoctor}>
                 <View style={[styles.quickIconBox, { backgroundColor: 'rgba(126,255,138,0.15)' }]}>
                   <Text style={styles.quickIcon}>📸</Text>
                 </View>
-                <Text style={styles.quickLabel}>Scan{'\n'}Crop</Text>
+                <Text style={styles.quickLabel}>{t(selectedLanguage, 'scanCrop')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.quickCard} onPress={onAlerts}>
                 <View style={[styles.quickIconBox, { backgroundColor: 'rgba(255,107,107,0.15)' }]}>
                   <Text style={styles.quickIcon}>🚨</Text>
                 </View>
-                <Text style={styles.quickLabel}>View{'\n'}Alerts</Text>
+                <Text style={styles.quickLabel}>{t(selectedLanguage, 'viewAlerts')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.quickCard} onPress={onMandi}>
                 <View style={[styles.quickIconBox, { backgroundColor: 'rgba(255,217,102,0.15)' }]}>
                   <Text style={styles.quickIcon}>📊</Text>
                 </View>
-                <Text style={styles.quickLabel}>Check{'\n'}Prices</Text>
+                <Text style={styles.quickLabel}>{t(selectedLanguage, 'checkPrices')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard}>
-                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(100,181,246,0.15)' }]}>
-                  <Text style={styles.quickIcon}>☁️</Text>
-                </View>
-                <Text style={styles.quickLabel}>Weather{'\n'}Forecast</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard}>
-                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(186,104,200,0.15)' }]}>
-                  <Text style={styles.quickIcon}>📞</Text>
-                </View>
-                <Text style={styles.quickLabel}>Expert{'\n'}Help</Text>
-              </TouchableOpacity>
-            </ScrollView>
+            </View>
           </View>
         </ScrollView>
 
@@ -382,12 +263,12 @@ export default function HomeScreen({
               <View style={styles.navTabActive}>
                 <Text style={styles.navIcon}>🏠</Text>
               </View>
-              <Text style={[styles.navLabel, styles.navLabelActive]}>Home</Text>
+              <Text style={[styles.navLabel, styles.navLabelActive]}>{t(selectedLanguage, 'home')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.navTab}>
               <Text style={styles.navIcon}>🌾</Text>
-              <Text style={styles.navLabel}>Farm</Text>
+              <Text style={styles.navLabel}>{t(selectedLanguage, 'farm')}</Text>
             </TouchableOpacity>
 
             {/* Center FAB */}
@@ -397,17 +278,17 @@ export default function HomeScreen({
                   <Text style={styles.fabIcon}>🎤</Text>
                 </View>
               </TouchableOpacity>
-              <Text style={styles.fabLabel}>Ask AI</Text>
+              <Text style={styles.fabLabel}>{t(selectedLanguage, 'askAi')}</Text>
             </View>
 
             <TouchableOpacity style={styles.navTab} onPress={onMandi}>
               <Text style={styles.navIcon}>🏪</Text>
-              <Text style={styles.navLabel}>Market</Text>
+              <Text style={styles.navLabel}>{t(selectedLanguage, 'market')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.navTab}>
               <Text style={styles.navIcon}>👤</Text>
-              <Text style={styles.navLabel}>Profile</Text>
+              <Text style={styles.navLabel}>{t(selectedLanguage, 'profile')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -755,127 +636,65 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Dashboard Grid
-  dashboardGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 14,
+  // Simplified Dashboard - Large Cards
+  simpleDashboard: {
+    paddingHorizontal: 16,
     gap: 12,
+    marginBottom: 8,
   },
-  dashboardCard: {
-    width: (width - 40) / 2,
+  simpleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(12, 32, 20, 0.9)',
     borderRadius: 20,
-    padding: 16,
+    padding: 18,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+    borderLeftWidth: 4,
   },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  cardIconBox: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+  simpleIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    marginRight: 16,
   },
-  cardIcon: {
-    fontSize: 24,
+  simpleIcon: {
+    fontSize: 32,
   },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    gap: 5,
+  simpleCardContent: {
+    flex: 1,
   },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusLabel: {
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  cardTitle: {
-    fontSize: 15,
+  simpleCardTitle: {
+    fontSize: 18,
     fontWeight: '800',
     color: '#fff',
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  cardSubtitle: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.45)',
-    fontWeight: '600',
-    marginBottom: 14,
-  },
-  metricContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: 14,
-  },
-  metricLeft: {},
-  metricValue: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#fff',
-  },
-  metricLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  trendBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  trendText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
-  },
-  tapHint: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.35)',
+  simpleCardSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.55)',
     fontWeight: '600',
   },
-  arrowCircle: {
-    width: 24,
-    height: 24,
+  simpleArrow: {
+    width: 36,
+    height: 36,
     borderRadius: 12,
     backgroundColor: 'rgba(126, 255, 138, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  arrowIcon: {
-    fontSize: 12,
+  simpleArrowText: {
+    fontSize: 18,
     color: '#7eff8a',
     fontWeight: '700',
   },
 
-  // Quick Actions
+  // Quick Actions - Grid Layout
   quickSection: {
     marginTop: 24,
-    paddingLeft: 20,
+    paddingHorizontal: 16,
   },
   quickTitle: {
     fontSize: 16,
@@ -883,36 +702,37 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 14,
   },
-  quickScroll: {
-    paddingRight: 20,
+  quickGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 12,
   },
   quickCard: {
+    flex: 1,
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 18,
-    padding: 14,
-    width: 80,
+    padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
   },
   quickIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
   },
   quickIcon: {
-    fontSize: 22,
+    fontSize: 26,
   },
   quickLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
     fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 14,
+    lineHeight: 16,
   },
 
   // Bottom Navigation

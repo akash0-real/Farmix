@@ -4,8 +4,9 @@ import {
   getCommunityAlerts,
   subscribeToCommunityAlerts,
 } from '../services/alertService';
+import { t } from '../languages/uiText';
 
-export default function CommunityAlertScreen() {
+export default function CommunityAlertScreen({ selectedLanguage }) {
   const [alerts, setAlerts] = useState(() => getCommunityAlerts());
 
   useEffect(() => {
@@ -18,9 +19,9 @@ export default function CommunityAlertScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Community Alerts</Text>
+      <Text style={styles.title}>{t(selectedLanguage, 'communityAlerts')}</Text>
       <Text style={styles.subtitle}>
-        Severity-based disease notifications by impact radius.
+        {t(selectedLanguage, 'severityBasedAlerts')}
       </Text>
 
       {alerts.map(alert => (
@@ -38,10 +39,10 @@ export default function CommunityAlertScreen() {
           <Text style={styles.cardTitle}>{alert.title}</Text>
           <Text style={styles.cardMessage}>{alert.message}</Text>
           <Text style={styles.meta}>
-            Severity: {alert.severity.toUpperCase()} | Radius: {alert.radiusKm} km
+            {t(selectedLanguage, 'severity')}: {alert.severity.toUpperCase()} | {t(selectedLanguage, 'radius')}: {alert.radiusKm} km
           </Text>
           <Text style={styles.meta}>
-            Area: {alert.locationName} | {new Date(alert.createdAt).toLocaleString()}
+            {t(selectedLanguage, 'area')}: {alert.locationName} | {new Date(alert.createdAt).toLocaleString()}
           </Text>
         </View>
       ))}
