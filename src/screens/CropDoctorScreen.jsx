@@ -44,30 +44,29 @@ function isQuotaOrRateLimitError(message) {
   );
 }
 
-function buildDemoFallbackResult(message) {
+function buildDemoFallbackResult(message, translate) {
   const retrySeconds = extractRetrySeconds(message);
 
   return {
-    diseaseName: 'Potential disease stress',
+    diseaseName: translate('cropDoctorFallbackDiseaseName'),
     confidence: 'Low',
     confidenceBand: 'Low',
     severity: 'Low',
-    crop: 'Unknown crop',
+    crop: translate('cropDoctorUnknownCrop'),
     modelVersion: 'fallback-demo-mode',
     summary: retrySeconds
-      ? `AI service is busy right now. Please retry in about ${retrySeconds} seconds.`
-      : 'AI service is temporarily unavailable. Retake a close-up photo and try again shortly.',
+      ? translate('cropDoctorAiBusyRetrySeconds', { seconds: retrySeconds })
+      : translate('cropDoctorAiBusyRetrySoon'),
     treatment: [
-      'Retake photo in bright light and keep one affected leaf centered.',
-      'Isolate visibly damaged leaves until confirmation.',
-      'Consult a local agronomist before spraying.',
+      translate('cropDoctorTipRetakeBrightLight'),
+      translate('cropDoctorTipIsolateLeaves'),
+      translate('cropDoctorTipConsultAgronomist'),
     ],
     prevention: [
-      'Avoid overhead irrigation while leaves are wet.',
-      'Sanitize tools after touching affected plants.',
+      translate('cropDoctorPreventionAvoidWetIrrigation'),
+      translate('cropDoctorPreventionSanitizeTools'),
     ],
-    disclaimer:
-      'Fallback advice shown because live AI analysis is temporarily unavailable.',
+    disclaimer: translate('cropDoctorFallbackDisclaimer'),
     topPredictions: [],
     needsRetake: true,
   };
@@ -87,11 +86,11 @@ function ResultSection({ title, items }) {
   );
 }
 
-function PredictionSection({ predictions }) {
+function PredictionSection({ predictions, title }) {
   if (!Array.isArray(predictions) || predictions.length === 0) return null;
   return (
     <View style={styles.sectionCard}>
-      <Text style={styles.sectionTitle}>Top model predictions</Text>
+      <Text style={styles.sectionTitle}>{title}</Text>
       {predictions.map(prediction => (
         <View
           key={`${prediction.label}-${prediction.confidencePercent}`}
@@ -111,6 +110,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
   const [capturedImage, setCapturedImage] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
+  const tt = (key, params = {}) => t(selectedLanguage, key, params);
 
   const handleCapture = async () => {
     try {
@@ -120,8 +120,8 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
         );
         if (cameraGranted !== PermissionsAndroid.RESULTS.GRANTED) {
           Alert.alert(
-            'Camera Permission Needed',
-            'Please allow camera access to capture crop photos.',
+            tt('cropDoctorCameraPermissionTitle'),
+            tt('cropDoctorCameraPermissionMessage'),
           );
           return;
         }
@@ -137,24 +137,24 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
 
       if (response.didCancel) return;
       if (response.errorCode) {
-        throw new Error(response.errorMessage || 'Camera could not be opened.');
+        throw new Error(response.errorMessage || tt('cropDoctorCameraOpenFailed'));
       }
 
       const asset = response.assets?.[0];
       if (!asset?.uri || !asset?.base64) {
-        throw new Error('The captured image was incomplete. Please try again.');
+        throw new Error(tt('cropDoctorImageIncomplete'));
       }
 
       setCapturedImage(asset);
       setScanResult(null);
     } catch (error) {
-      Alert.alert('Camera Error', error.message);
+      Alert.alert(tt('cropDoctorCameraErrorTitle'), error.message);
     }
   };
 
   const handleAnalyze = async () => {
     if (!capturedImage?.base64) {
-      Alert.alert('No Image', 'Capture a crop photo before starting analysis.');
+      Alert.alert(tt('cropDoctorNoImageTitle'), tt('cropDoctorNoImageMessage'));
       return;
     }
 
@@ -177,52 +177,56 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
       // ── Speak the result ──
       const severityWord =
         result.severity === 'High'
-          ? 'high severity'
+          ? tt('cropDoctorSeverityHigh')
           : result.severity === 'Moderate'
-          ? 'moderate severity'
-          : 'low severity';
+          ? tt('cropDoctorSeverityModerate')
+          : tt('cropDoctorSeverityLow');
 
       const speech = [
-        `Disease detected: ${result.diseaseName}.`,
-        `Crop: ${result.crop}.`,
-        `Severity: ${severityWord}.`,
-        `Confidence: ${result.confidence}.`,
+        `${tt('cropDoctorSpeechDiseaseDetected')}: ${result.diseaseName}.`,
+        `${tt('cropDoctorSpeechCrop')}: ${result.crop}.`,
+        `${tt('cropDoctorSpeechSeverity')}: ${severityWord}.`,
+        `${tt('cropDoctorSpeechConfidence')}: ${result.confidence}.`,
         `${result.summary}`,
-        `Community alert sent to farmers within ${communityAlert.radiusKm} kilometers.`,
+        tt('cropDoctorSpeechCommunityAlert', { radiusKm: communityAlert.radiusKm }),
       ].join(' ');
 
       Tts.stop();
       setTimeout(() => Tts.speak(speech), 500);
 
       Alert.alert(
-        '🌿 Analysis Complete',
-        `Detected: ${result.diseaseName}\nSeverity: ${result.severity}\n⚠️ ${communityAlert.radiusKm}km community alert triggered!`,
+        tt('cropDoctorAnalysisCompleteTitle'),
+        tt('cropDoctorAnalysisCompleteMessage', {
+          disease: result.diseaseName,
+          severity: result.severity,
+          radiusKm: communityAlert.radiusKm,
+        }),
       );
     } catch (error) {
-      const message = error?.message || 'Scan could not be completed.';
+      const message = error?.message || tt('cropDoctorScanFailedGeneric');
 
       if (isQuotaOrRateLimitError(message)) {
         const retrySeconds = extractRetrySeconds(message);
-        const fallbackResult = buildDemoFallbackResult(message);
+        const fallbackResult = buildDemoFallbackResult(message, tt);
         setScanResult(fallbackResult);
 
         Tts.stop();
         setTimeout(() => {
           Tts.speak(
             retrySeconds
-              ? `AI service is busy. Please retry in about ${retrySeconds} seconds.`
-              : 'AI service is busy. Please retry in about one minute.',
+              ? tt('cropDoctorAiBusyRetrySeconds', { seconds: retrySeconds })
+              : tt('cropDoctorAiBusyRetryMinute'),
           );
         }, 400);
 
         Alert.alert(
-          'AI Busy',
+          tt('cropDoctorAiBusyTitle'),
           retrySeconds
-            ? `High traffic right now. Please retry in about ${retrySeconds} seconds.`
-            : 'High traffic right now. Please retry in about one minute.',
+            ? tt('cropDoctorAiBusyRetrySeconds', { seconds: retrySeconds })
+            : tt('cropDoctorAiBusyRetryMinute'),
         );
       } else {
-        Alert.alert('Scan Failed', message);
+        Alert.alert(tt('cropDoctorScanFailedTitle'), message);
       }
     } finally {
       setIsScanning(false);
@@ -233,7 +237,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
     if (!scanResult) return;
     const treatment = scanResult.treatment?.join('. ') || '';
     Tts.stop();
-    Tts.speak(`Treatment plan for ${scanResult.diseaseName}. ${treatment}`);
+    Tts.speak(`${tt('cropDoctorListenPrefix')} ${scanResult.diseaseName}. ${treatment}`);
   };
 
   const handleReset = () => {
@@ -273,10 +277,9 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
             ) : (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyIcon}>📸</Text>
-                <Text style={styles.emptyTitle}>No crop photo yet</Text>
+                <Text style={styles.emptyTitle}>{tt('cropDoctorNoPhotoYet')}</Text>
                 <Text style={styles.emptyText}>
-                  Point the camera at the damaged area in bright light for the best
-                  result.
+                  {tt('cropDoctorNoPhotoHint')}
                 </Text>
               </View>
             )}
@@ -285,7 +288,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
           <View style={styles.buttonRow}>
             <Pressable style={styles.primaryButton} onPress={handleCapture}>
               <Text style={styles.primaryButtonText}>
-                {capturedImage ? '📷 Retake' : '📷 Open Camera'}
+                {capturedImage ? `📷 ${tt('cropDoctorRetake')}` : `📷 ${tt('cropDoctorOpenCamera')}`}
               </Text>
             </Pressable>
             <Pressable
@@ -299,28 +302,28 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
               {isScanning ? (
                 <ActivityIndicator color="#7eff8a" />
               ) : (
-                <Text style={styles.secondaryButtonText}>🔍 Analyze</Text>
+                <Text style={styles.secondaryButtonText}>🔍 {tt('cropDoctorAnalyze')}</Text>
               )}
             </Pressable>
           </View>
 
           {capturedImage && (
             <Pressable style={styles.resetLink} onPress={handleReset}>
-              <Text style={styles.resetText}>Clear photo</Text>
+              <Text style={styles.resetText}>{tt('cropDoctorClearPhoto')}</Text>
             </Pressable>
           )}
 
           {!scanResult && (
             <View style={styles.tipCard}>
-              <Text style={styles.tipTitle}>📋 Photo tips</Text>
+              <Text style={styles.tipTitle}>📋 {tt('cropDoctorPhotoTips')}</Text>
               <Text style={styles.tipText}>
-                • Capture one leaf or fruit close-up
+                • {tt('cropDoctorTipCaptureSingleLeaf')}
               </Text>
               <Text style={styles.tipText}>
-                • Avoid shadows and blurry movement
+                • {tt('cropDoctorTipAvoidShadows')}
               </Text>
               <Text style={styles.tipText}>
-                • Include the damaged part in full frame
+                • {tt('cropDoctorTipIncludeDamage')}
               </Text>
             </View>
           )}
@@ -352,15 +355,15 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
                     : scanResult.severity === 'Moderate'
                     ? '🟡'
                     : '🟢'}{' '}
-                  {scanResult.severity?.toUpperCase()} SEVERITY
+                  {scanResult.severity?.toUpperCase()} {tt('cropDoctorSeverity')}
                 </Text>
               </View>
 
               <View style={styles.resultCard}>
-                <Text style={styles.resultLabel}>LIKELY DIAGNOSIS</Text>
+                <Text style={styles.resultLabel}>{tt('cropDoctorLikelyDiagnosis')}</Text>
                 <Text style={styles.resultTitle}>{scanResult.diseaseName}</Text>
                 <Text style={styles.cropText}>
-                  Identified in: {scanResult.crop}
+                  {tt('cropDoctorIdentifiedIn')}: {scanResult.crop}
                 </Text>
 
                 <View style={styles.confidenceRow}>
@@ -372,7 +375,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
                         ? '72.5%'
                         : '45.0%'}
                     </Text>
-                    <Text style={styles.confidenceLabel}>CONFIDENCE SCORE</Text>
+                    <Text style={styles.confidenceLabel}>{tt('cropDoctorConfidenceScore')}</Text>
                   </View>
                   <View style={styles.checkCircle}>
                     <Text style={styles.checkIcon}>✓</Text>
@@ -387,40 +390,43 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
                 onPress={handleListenTreatment}
               >
                 <Text style={styles.listenButtonText}>
-                  🔊 Listen to Treatment Plan
+                  🔊 {tt('cropDoctorListenTreatmentPlan')}
                 </Text>
               </Pressable>
 
               <View style={styles.alertCard}>
-                <Text style={styles.alertCardTitle}>⚠️ Community Alert Sent!</Text>
+                <Text style={styles.alertCardTitle}>⚠️ {tt('cropDoctorCommunityAlertSent')}</Text>
                 <Text style={styles.alertCardText}>
                   {scanResult.severity === 'High'
-                    ? '280 farmers within 20km have been notified'
+                    ? tt('cropDoctorCommunityAlertHigh')
                     : scanResult.severity === 'Moderate'
-                    ? '150 farmers within 8km have been notified'
-                    : '50 farmers within 3km have been notified'}
+                    ? tt('cropDoctorCommunityAlertModerate')
+                    : tt('cropDoctorCommunityAlertLow')}
                 </Text>
               </View>
 
               <ResultSection
-                title="🌿 Treatment Steps"
+                title={`🌿 ${tt('cropDoctorTreatmentSteps')}`}
                 items={scanResult.treatment}
               />
 
               <ResultSection
-                title="🛡️ Prevention Tips"
+                title={`🛡️ ${tt('cropDoctorPreventionTips')}`}
                 items={scanResult.prevention}
               />
 
-              <PredictionSection predictions={scanResult.topPredictions} />
+              <PredictionSection
+                predictions={scanResult.topPredictions}
+                title={tt('cropDoctorTopPredictions')}
+              />
 
               <View style={styles.disclaimerCard}>
-                <Text style={styles.disclaimerTitle}>⚠️ Before Spraying</Text>
+                <Text style={styles.disclaimerTitle}>⚠️ {tt('cropDoctorBeforeSpraying')}</Text>
                 <Text style={styles.disclaimerText}>{scanResult.disclaimer}</Text>
               </View>
 
               <Pressable style={styles.scanAgainButton} onPress={handleReset}>
-                <Text style={styles.scanAgainText}>📸 Scan Another Crop</Text>
+                <Text style={styles.scanAgainText}>📸 {tt('cropDoctorScanAnother')}</Text>
               </Pressable>
             </>
           )}

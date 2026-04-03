@@ -11,6 +11,7 @@ import {
   getCommunityAlerts,
   subscribeToCommunityAlerts,
 } from '../services/alertService';
+import { fetchWeatherByLocation } from '../services/weatherService';
 import { useUser } from '../context/UserContext';
 import { t } from '../languages/uiText';
 
@@ -24,6 +25,8 @@ export default function HomeScreen({
 }) {
   const { user } = useUser();
   const [latestAlert, setLatestAlert] = useState(() => getCommunityAlerts()[0]);
+  const [weather, setWeather] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToCommunityAlerts(alerts => {
@@ -31,6 +34,46 @@ export default function HomeScreen({
     });
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadWeather = async () => {
+      if (!user.state && !user.district && !user.village) {
+        if (isMounted) {
+          setWeather(null);
+        }
+        return;
+      }
+
+      setWeatherLoading(true);
+      try {
+        const weatherData = await fetchWeatherByLocation({
+          village: user.village,
+          district: user.district,
+          state: user.state,
+        });
+
+        if (isMounted) {
+          setWeather(weatherData);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setWeather(null);
+        }
+      } finally {
+        if (isMounted) {
+          setWeatherLoading(false);
+        }
+      }
+    };
+
+    loadWeather();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user.village, user.district, user.state]);
 
   // Get greeting based on time of day with translation
   const getGreeting = () => {
@@ -161,6 +204,45 @@ export default function HomeScreen({
                 <Text style={styles.statLabel}>{stat.label}</Text>
               </View>
             ))}
+          </View>
+
+          {/* Weather Card */}
+          <View style={styles.weatherCard}>
+            <View style={styles.weatherCardGlow} />
+            <View style={styles.weatherHeader}>
+              <Text style={styles.weatherTitle}>{t(selectedLanguage, 'weatherNow')}</Text>
+              <Text style={styles.weatherLocation}>
+                📍 {weather?.locationName || `${user.district || user.state || t(selectedLanguage, 'yourArea')}`}
+              </Text>
+            </View>
+
+            {weatherLoading ? (
+              <Text style={styles.weatherLoading}>{t(selectedLanguage, 'loadingWeather')}</Text>
+            ) : weather ? (
+              <>
+                <View style={styles.weatherMainRow}>
+                  <Text style={styles.weatherTemp}>
+                    {Math.round(Number(weather.temperatureC))}°C
+                  </Text>
+                  <Text style={styles.weatherCondition}>
+                    {t(selectedLanguage, weather.conditionKey)}
+                  </Text>
+                </View>
+                <View style={styles.weatherMetaRow}>
+                  <Text style={styles.weatherMeta}>
+                    {t(selectedLanguage, 'feelsLike')}: {Math.round(Number(weather.feelsLikeC))}°C
+                  </Text>
+                  <Text style={styles.weatherMeta}>
+                    {t(selectedLanguage, 'humidity')}: {Math.round(Number(weather.humidity))}%
+                  </Text>
+                  <Text style={styles.weatherMeta}>
+                    {t(selectedLanguage, 'wind')}: {Math.round(Number(weather.windKmh))} km/h
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text style={styles.weatherLoading}>{t(selectedLanguage, 'weatherUnavailable')}</Text>
+            )}
           </View>
 
           {/* Voice Assistant Card */}
@@ -479,6 +561,81 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     fontWeight: '600',
     marginTop: 4,
+  },
+
+  // Weather Card
+  weatherCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(126, 255, 138, 0.18)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    padding: 14,
+  },
+  weatherCardGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(47, 141, 65, 0.08)',
+  },
+  weatherHeader: {
+    marginBottom: 10,
+  },
+  weatherTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#7eff8a',
+    letterSpacing: 0.8,
+  },
+  weatherLocation: {
+    marginTop: 4,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.75)',
+    fontWeight: '600',
+  },
+  weatherLoading: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '600',
+  },
+  weatherMainRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  weatherTemp: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#fff',
+    lineHeight: 38,
+  },
+  weatherCondition: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#dfffe4',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(126,255,138,0.12)',
+  },
+  weatherMetaRow: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  weatherMeta: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.82)',
+    fontWeight: '700',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
 
   // Voice Card
