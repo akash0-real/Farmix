@@ -32,10 +32,46 @@ describe('alertService', () => {
     expect(alert.title).toContain('Leaf Blight');
     expect(alert.radiusKm).toBe(20);
     expect(alert.severity).toBe('high');
+    expect(alert.reportCount).toBe(1);
 
     const alerts = getCommunityAlerts();
     expect(alerts[0].id).toBe(alert.id);
     expect(alerts[0].radiusKm).toBe(20);
+  });
+
+  it('aggregates repeated disease reports within the same cluster window', () => {
+    const { publishDiseaseAlert } = require('../../services/alertService');
+
+    const first = publishDiseaseAlert({
+      diseaseName: 'Rust',
+      crop: 'Wheat',
+      severity: 'moderate',
+      locationName: 'Kolar',
+    });
+
+    const second = publishDiseaseAlert({
+      diseaseName: 'Rust',
+      crop: 'Wheat',
+      severity: 'moderate',
+      locationName: 'Kolar',
+    });
+
+    expect(second.id).toBe(first.id);
+    expect(second.reportCount).toBe(2);
+  });
+
+  it('increments confirmed count when community confirmation is true', () => {
+    const { publishDiseaseAlert } = require('../../services/alertService');
+
+    const alert = publishDiseaseAlert({
+      diseaseName: 'Leaf Spot',
+      crop: 'Tomato',
+      severity: 'high',
+      locationName: 'Mysuru',
+      communityConfirmed: true,
+    });
+
+    expect(alert.confirmedCount).toBe(1);
   });
 
   it('notifies subscribers when alert list updates', () => {

@@ -17,6 +17,7 @@ import { launchCamera } from 'react-native-image-picker';
 import { detectCropDiseaseAI } from '../services/cropDoctorService';
 import { publishDiseaseAlert } from '../services/alertService';
 import { t } from '../languages/uiText';
+import { useUser } from '../context/UserContext';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -107,6 +108,7 @@ function PredictionSection({ predictions, title }) {
 }
 
 export default function CropDoctorScreen({ selectedLanguage, onBack }) {
+  const { user } = useUser();
   const [capturedImage, setCapturedImage] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -170,6 +172,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
         diseaseName: result.diseaseName,
         crop: result.crop,
         severity: result.severity,
+        locationName: user.district || user.state || t(selectedLanguage, 'yourArea'),
       });
 
       setScanResult(result);
@@ -201,6 +204,26 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
           severity: result.severity,
           radiusKm: communityAlert.radiusKm,
         }),
+        [
+          {
+            text: tt('alertNearbyNo'),
+            style: 'cancel',
+          },
+          {
+            text: tt('alertNearbyYes'),
+            onPress: () => {
+              publishDiseaseAlert({
+                diseaseName: result.diseaseName,
+                crop: result.crop,
+                severity: result.severity,
+                locationName: user.district || user.state || t(selectedLanguage, 'yourArea'),
+                communityConfirmed: true,
+              });
+              Tts.stop();
+              Tts.speak(tt('alertThanksConfirmation'));
+            },
+          },
+        ],
       );
     } catch (error) {
       const message = error?.message || tt('cropDoctorScanFailedGeneric');

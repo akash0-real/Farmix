@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
   Alert,
   View,
@@ -17,6 +17,8 @@ import { fetchWeatherByLocation } from '../services/weatherService';
 import { useUser } from '../context/UserContext';
 import { t } from '../languages/uiText';
 import { getTtsCode } from '../languages/languageConfig';
+import Tts from 'react-native-tts';
+import { getTtsCode } from '../languages/languageConfig';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -30,6 +32,7 @@ export default function HomeScreen({
   const [latestAlert, setLatestAlert] = useState(() => getCommunityAlerts()[0]);
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const lastSpokenAlertIdRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = subscribeToCommunityAlerts(alerts => {
@@ -153,6 +156,32 @@ export default function HomeScreen({
       ? 'Yellow'
       : 'Green';
 
+  const isDistrictWatch = Boolean(
+    latestAlert &&
+      String(latestAlert.severity).toLowerCase() === 'high' &&
+      Number(latestAlert.reportCount || 1) >= 5,
+  );
+
+  useEffect(() => {
+    if (!isDistrictWatch || !latestAlert?.id) {
+      return;
+    }
+
+    if (lastSpokenAlertIdRef.current === latestAlert.id) {
+      return;
+    }
+
+    lastSpokenAlertIdRef.current = latestAlert.id;
+    const ttsCode = getTtsCode(selectedLanguage);
+    Tts.setDefaultLanguage(ttsCode);
+    Tts.stop();
+    Tts.speak(
+      t(selectedLanguage, 'districtWatchVoice', {
+        location: latestAlert.locationName || t(selectedLanguage, 'yourArea'),
+      }),
+    );
+  }, [isDistrictWatch, latestAlert, selectedLanguage]);
+
   const handleVoicePlay = () => {
     const ttsCode = getTtsCode(selectedLanguage);
     Tts.setDefaultLanguage(ttsCode);
@@ -269,6 +298,20 @@ export default function HomeScreen({
               <Text style={styles.weatherLoading}>{t(selectedLanguage, 'weatherUnavailable')}</Text>
             )}
           </View>
+
+          {isDistrictWatch ? (
+            <View style={styles.watchCard}>
+              <Text style={styles.watchTitle}>🚨 {t(selectedLanguage, 'districtWatchTitle')}</Text>
+              <Text style={styles.watchText}>
+                {t(selectedLanguage, 'districtWatchMessage', {
+                  location: latestAlert.locationName || t(selectedLanguage, 'yourArea'),
+                })}
+              </Text>
+              <TouchableOpacity style={styles.watchBtn} onPress={onAlerts}>
+                <Text style={styles.watchBtnText}>{t(selectedLanguage, 'districtWatchAction')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           {/* Voice Assistant Card */}
           <View style={styles.voiceCard}>
@@ -661,6 +704,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 8,
+  },
+
+  watchCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,107,107,0.5)',
+    backgroundColor: 'rgba(255,107,107,0.14)',
+    padding: 14,
+  },
+  watchTitle: {
+    color: '#ffb3b3',
+    fontSize: 14,
+    fontWeight: '900',
+    marginBottom: 6,
+  },
+  watchText: {
+    color: 'rgba(255,255,255,0.84)',
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '700',
+  },
+  watchBtn: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 9,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  watchBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
   },
 
   // Voice Card
