@@ -281,7 +281,25 @@ const English = {
   "soilNoImageTitle": "No Image",
   "soilNoImageMessage": "Capture a soil photo before starting analysis.",
   "soilAnalysisFailedTitle": "Analysis Failed",
-  "soilType": "Soil Type"
+  "soilType": "Soil Type",
+  
+  "govtSchemes": "Govt Schemes",
+  "govtSchemesSubtitle": "PM-KISAN, Fasal Bima & more benefits",
+  "schemeBenefit": "BENEFIT",
+  "schemeEligibility": "Eligibility",
+  "schemeDocuments": "Documents Required",
+  "schemeApplyOnline": "Apply Online",
+  "schemeTapMore": "Tap for details",
+  "schemeTapLess": "Tap to collapse",
+  "schemeSearch": "Search schemes...",
+  "schemeAll": "All",
+  "schemeShowing": "Showing {count} schemes",
+  "schemeNoResults": "No schemes found",
+  "schemeTip": "Pro Tip",
+  "schemeTipText": "Visit your nearest CSC (Common Service Center) for help with applications. They can assist with document upload and form filling.",
+  
+  "offlineMode": "Offline Mode",
+  "lastSync": "Last updated"
 };
 
 export default English;

@@ -26,6 +26,7 @@ export default function HomeScreen({
   onMandi,
   onAlerts,
   onSoilAnalysis,
+  onGovtSchemes,
 }) {
   const { user } = useUser();
   const [latestAlert, setLatestAlert] = useState(() => getCommunityAlerts()[0]);
@@ -134,6 +135,13 @@ export default function HomeScreen({
       color: '#ffd966',
     },
     {
+      icon: '🏛️',
+      title: t(selectedLanguage, 'govtSchemes'),
+      subtitle: t(selectedLanguage, 'govtSchemesSubtitle'),
+      action: 'govtSchemes',
+      color: '#4dabf7',
+    },
+    {
       icon: '⚠️',
       title: t(selectedLanguage, 'alertCenter'),
       subtitle: t(selectedLanguage, 'communityWarnings'),
@@ -146,6 +154,7 @@ export default function HomeScreen({
     if (action === 'cropDoctor') onCropDoctor();
     else if (action === 'soilAnalysis') onSoilAnalysis();
     else if (action === 'mandi') onMandi();
+    else if (action === 'govtSchemes') onGovtSchemes();
     else if (action === 'alerts') onAlerts();
   };
 

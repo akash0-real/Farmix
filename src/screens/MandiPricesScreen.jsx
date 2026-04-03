@@ -14,6 +14,7 @@ import { getTtsCode } from '../languages/languageConfig';
 import { useUser } from '../context/UserContext';
 import { fetchMandiPrices } from '../services/mandiApi';
 import { translateMandiItems } from '../services/translationService';
+import { cacheMandiPrices, getCachedMandiPrices, formatTimeAgo } from '../services/offlineCache';
 import MandiPriceCard from '../components/MandiPriceCard';
 
 const farmImage = require('../assests/images/field.jpg');
@@ -23,10 +24,14 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isOffline, setIsOffline] = useState(false);
+  const [lastSync, setLastSync] = useState(null);
 
   const loadPrices = useCallback(async () => {
     setLoading(true);
     setError('');
+    setIsOffline(false);
+
     try {
       const data = await fetchMandiPrices({
         state: user.state,
@@ -37,9 +42,21 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
       // Translate dynamic content if not English
       const translatedData = await translateMandiItems(data, selectedLanguage);
       setPrices(translatedData);
+      setLastSync(Date.now());
+      // Cache for offline use
+      cacheMandiPrices(translatedData);
     } catch (err) {
-      setError(err?.message || t(selectedLanguage, 'mandiErrorLoading'));
-      setPrices([]);
+      // Try to load from cache
+      const cached = await getCachedMandiPrices();
+      if (cached?.data?.length > 0) {
+        setPrices(cached.data);
+        setIsOffline(true);
+        setLastSync(Date.now() - cached.age);
+        setError('');
+      } else {
+        setError(err?.message || t(selectedLanguage, 'mandiErrorLoading'));
+        setPrices([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -106,6 +123,18 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
 
           <Text style={styles.title}>💰 {t(selectedLanguage, 'mandiPricesTitle')}</Text>
           <Text style={styles.subtitle}>{t(selectedLanguage, 'liveMarketUpdates')}</Text>
+
+          {isOffline && (
+            <View style={styles.offlineBanner}>
+              <Text style={styles.offlineIcon}>📴</Text>
+              <View style={styles.offlineInfo}>
+                <Text style={styles.offlineText}>{t(selectedLanguage, 'offlineMode')}</Text>
+                <Text style={styles.offlineSync}>
+                  {t(selectedLanguage, 'lastSync')}: {formatTimeAgo(lastSync)}
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.chipsRow}>
             <View style={styles.chip}>
@@ -310,5 +339,32 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.84)',
     fontSize: 13,
     fontWeight: '700',
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,217,102,0.15)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,217,102,0.3)',
+    padding: 12,
+    marginBottom: 12,
+  },
+  offlineIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  offlineInfo: {
+    flex: 1,
+  },
+  offlineText: {
+    color: '#ffd966',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  offlineSync: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    marginTop: 2,
   },
 });

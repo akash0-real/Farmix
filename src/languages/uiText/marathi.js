@@ -281,7 +281,24 @@ const Marathi = {
   "soilNoImageMessage": "Capture a soil photo before starting analysis.",
   "soilAnalysisFailedTitle": "Analysis Failed",
   "soilType": "Soil Type",
-  "scanSoil": "Scan\nSoil"
+  "scanSoil": "Scan\nSoil",
+
+  "govtSchemes": "Govt Schemes",
+  "govtSchemesSubtitle": "PM-KISAN, Fasal Bima & more benefits",
+  "schemeBenefit": "BENEFIT",
+  "schemeEligibility": "Eligibility",
+  "schemeDocuments": "Documents Required",
+  "schemeApplyOnline": "Apply Online",
+  "schemeTapMore": "Tap for details",
+  "schemeTapLess": "Tap to collapse",
+  "schemeSearch": "Search schemes...",
+  "schemeAll": "All",
+  "schemeShowing": "Showing {count} schemes",
+  "schemeNoResults": "No schemes found",
+  "schemeTip": "Pro Tip",
+  "schemeTipText": "Visit your nearest CSC (Common Service Center) for help with applications.",
+  "offlineMode": "Offline Mode",
+  "lastSync": "Last updated"
 
 };
 

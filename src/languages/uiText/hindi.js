@@ -281,7 +281,25 @@ const Hindi = {
   "soilNoImageTitle": "कोई छवि नहीं",
   "soilNoImageMessage": "विश्लेषण से पहले मिट्टी की फोटो लें।",
   "soilAnalysisFailedTitle": "विश्लेषण विफल",
-  "soilType": "मिट्टी का प्रकार"
+  "soilType": "मिट्टी का प्रकार",
+
+  "govtSchemes": "सरकारी योजनाएं",
+  "govtSchemesSubtitle": "PM-KISAN, फसल बीमा और अधिक लाभ",
+  "schemeBenefit": "लाभ",
+  "schemeEligibility": "पात्रता",
+  "schemeDocuments": "आवश्यक दस्तावेज",
+  "schemeApplyOnline": "ऑनलाइन आवेदन करें",
+  "schemeTapMore": "विवरण के लिए टैप करें",
+  "schemeTapLess": "छोटा करने के लिए टैप करें",
+  "schemeSearch": "योजनाएं खोजें...",
+  "schemeAll": "सभी",
+  "schemeShowing": "{count} योजनाएं दिखाई गईं",
+  "schemeNoResults": "कोई योजना नहीं मिली",
+  "schemeTip": "टिप",
+  "schemeTipText": "आवेदन में मदद के लिए अपने नजदीकी CSC (कॉमन सर्विस सेंटर) जाएं। वे दस्तावेज अपलोड और फॉर्म भरने में मदद कर सकते हैं।",
+
+  "offlineMode": "ऑफलाइन मोड",
+  "lastSync": "अंतिम अपडेट"
 };
 
 export default Hindi;
