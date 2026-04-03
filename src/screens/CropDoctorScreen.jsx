@@ -17,7 +17,9 @@ import { launchCamera } from 'react-native-image-picker';
 import { detectCropDiseaseAI } from '../services/cropDoctorService';
 import { publishDiseaseAlert } from '../services/alertService';
 import { t } from '../languages/uiText';
+import { getTtsCode } from '../languages/languageConfig';
 import { useUser } from '../context/UserContext';
+import { translateCropDoctorResult } from '../services/translationService';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -168,6 +170,9 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
         mimeType: capturedImage.type || 'image/jpeg',
       });
 
+      // Translate result if not English
+      const translatedResult = await translateCropDoctorResult(result, selectedLanguage);
+
       const communityAlert = publishDiseaseAlert({
         diseaseName: result.diseaseName,
         crop: result.crop,
@@ -175,22 +180,25 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
         locationName: user.district || user.state || t(selectedLanguage, 'yourArea'),
       });
 
-      setScanResult(result);
+      setScanResult(translatedResult);
 
       // ── Speak the result ──
+      const ttsCode = getTtsCode(selectedLanguage);
+      Tts.setDefaultLanguage(ttsCode);
+
       const severityWord =
-        result.severity === 'High'
+        translatedResult.severity === 'High'
           ? tt('cropDoctorSeverityHigh')
-          : result.severity === 'Moderate'
+          : translatedResult.severity === 'Moderate'
           ? tt('cropDoctorSeverityModerate')
           : tt('cropDoctorSeverityLow');
 
       const speech = [
-        `${tt('cropDoctorSpeechDiseaseDetected')}: ${result.diseaseName}.`,
-        `${tt('cropDoctorSpeechCrop')}: ${result.crop}.`,
+        `${tt('cropDoctorSpeechDiseaseDetected')}: ${translatedResult.diseaseName}.`,
+        `${tt('cropDoctorSpeechCrop')}: ${translatedResult.crop}.`,
         `${tt('cropDoctorSpeechSeverity')}: ${severityWord}.`,
-        `${tt('cropDoctorSpeechConfidence')}: ${result.confidence}.`,
-        `${result.summary}`,
+        `${tt('cropDoctorSpeechConfidence')}: ${translatedResult.confidence}.`,
+        `${translatedResult.summary}`,
         tt('cropDoctorSpeechCommunityAlert', { radiusKm: communityAlert.radiusKm }),
       ].join(' ');
 

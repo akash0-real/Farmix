@@ -16,6 +16,7 @@ import {
 } from '../services/alertService';
 import { t } from '../languages/uiText';
 import { getTtsCode } from '../languages/languageConfig';
+import { translateAlerts } from '../services/translationService';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -123,6 +124,7 @@ function groupAlerts(alerts) {
 
 export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
   const [alerts, setAlerts] = useState(() => getCommunityAlerts());
+  const [translatedAlerts, setTranslatedAlerts] = useState([]);
   const [checkedIds, setCheckedIds] = useState(() => new Set());
 
   useEffect(() => {
@@ -137,6 +139,19 @@ export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
   }, []);
 
   const groupedAlerts = useMemo(() => groupAlerts(alerts), [alerts]);
+
+  // Translate alerts when language changes or alerts update
+  useEffect(() => {
+    const translateContent = async () => {
+      if (groupedAlerts.length > 0) {
+        const translated = await translateAlerts(groupedAlerts, selectedLanguage);
+        setTranslatedAlerts(translated);
+      } else {
+        setTranslatedAlerts([]);
+      }
+    };
+    translateContent();
+  }, [groupedAlerts, selectedLanguage]);
 
   const speakAlert = alert => {
     const ttsCode = getTtsCode(selectedLanguage);
@@ -202,7 +217,7 @@ export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
           <Text style={styles.title}>🚨 {t(selectedLanguage, 'communityAlerts')}</Text>
           <Text style={styles.subtitle}>{t(selectedLanguage, 'severityBasedAlerts')}</Text>
 
-          {groupedAlerts.map(alert => {
+          {(translatedAlerts.length > 0 ? translatedAlerts : groupedAlerts).map(alert => {
             const severity = String(alert.severity || '').toLowerCase();
             const isChecked = checkedIds.has(alert.id);
             const trendTextKey =

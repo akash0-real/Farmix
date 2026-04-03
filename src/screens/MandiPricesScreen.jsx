@@ -13,6 +13,7 @@ import { t } from '../languages/uiText';
 import { getTtsCode } from '../languages/languageConfig';
 import { useUser } from '../context/UserContext';
 import { fetchMandiPrices } from '../services/mandiApi';
+import { translateMandiItems } from '../services/translationService';
 import MandiPriceCard from '../components/MandiPriceCard';
 
 const farmImage = require('../assests/images/field.jpg');
@@ -33,7 +34,9 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
         crops: user.crops || [],
         limit: 12,
       });
-      setPrices(data);
+      // Translate dynamic content if not English
+      const translatedData = await translateMandiItems(data, selectedLanguage);
+      setPrices(translatedData);
     } catch (err) {
       setError(err?.message || t(selectedLanguage, 'mandiErrorLoading'));
       setPrices([]);

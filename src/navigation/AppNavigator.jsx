@@ -5,6 +5,7 @@ import HomeScreen from '../screens/HomeScreen';
 import CropDoctorScreen from '../screens/CropDoctorScreen';
 import MandiPricesScreen from '../screens/MandiPricesScreen';
 import CommunityAlertScreen from '../screens/CommunityAlertScreen';
+import SoilAnalysisScreen from '../screens/SoilAnalysisScreen';
 
 const SCREEN_MAP = {
   Splash: SplashScreen,
@@ -12,6 +13,7 @@ const SCREEN_MAP = {
   CropDoctor: CropDoctorScreen,
   MandiPrices: MandiPricesScreen,
   CommunityAlert: CommunityAlertScreen,
+  SoilAnalysis: SoilAnalysisScreen,
 };
 
 export default function AppNavigator({ selectedLanguage }) {
@@ -37,6 +39,7 @@ export default function AppNavigator({ selectedLanguage }) {
           onCropDoctor: () => setActiveScreen('CropDoctor'),
           onMandi: () => setActiveScreen('MandiPrices'),
           onAlerts: () => setActiveScreen('CommunityAlert'),
+          onSoilAnalysis: () => setActiveScreen('SoilAnalysis'),
         }
       : {
           selectedLanguage,

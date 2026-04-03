@@ -25,6 +25,7 @@ export default function HomeScreen({
   onCropDoctor,
   onMandi,
   onAlerts,
+  onSoilAnalysis,
 }) {
   const { user } = useUser();
   const [latestAlert, setLatestAlert] = useState(() => getCommunityAlerts()[0]);
@@ -119,6 +120,13 @@ export default function HomeScreen({
       color: '#7eff8a',
     },
     {
+      icon: '🌍',
+      title: t(selectedLanguage, 'soilAnalysis'),
+      subtitle: t(selectedLanguage, 'soilAnalysisSubtitle'),
+      action: 'soilAnalysis',
+      color: '#c4a35a',
+    },
+    {
       icon: '💰',
       title: t(selectedLanguage, 'mandiPrices'),
       subtitle: t(selectedLanguage, 'liveMarketRates'),
@@ -136,6 +144,7 @@ export default function HomeScreen({
 
   const handlePress = action => {
     if (action === 'cropDoctor') onCropDoctor();
+    else if (action === 'soilAnalysis') onSoilAnalysis();
     else if (action === 'mandi') onMandi();
     else if (action === 'alerts') onAlerts();
   };
@@ -387,6 +396,12 @@ export default function HomeScreen({
                   <Text style={styles.quickIcon}>📸</Text>
                 </View>
                 <Text style={styles.quickLabel}>{t(selectedLanguage, 'scanCrop')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickCard} onPress={onSoilAnalysis}>
+                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(196,163,90,0.15)' }]}>
+                  <Text style={styles.quickIcon}>🌍</Text>
+                </View>
+                <Text style={styles.quickLabel}>{t(selectedLanguage, 'scanSoil')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.quickCard} onPress={onAlerts}>
                 <View style={[styles.quickIconBox, { backgroundColor: 'rgba(255,107,107,0.15)' }]}>
