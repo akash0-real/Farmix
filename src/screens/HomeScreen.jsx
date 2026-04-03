@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -7,6 +8,7 @@ import {
   ScrollView,
   ImageBackground,
 } from 'react-native';
+import Tts from 'react-native-tts';
 import {
   getCommunityAlerts,
   subscribeToCommunityAlerts,
@@ -14,6 +16,7 @@ import {
 import { fetchWeatherByLocation } from '../services/weatherService';
 import { useUser } from '../context/UserContext';
 import { t } from '../languages/uiText';
+import { getTtsCode } from '../languages/languageConfig';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -150,6 +153,28 @@ export default function HomeScreen({
       ? 'Yellow'
       : 'Green';
 
+  const handleVoicePlay = () => {
+    const ttsCode = getTtsCode(selectedLanguage);
+    Tts.setDefaultLanguage(ttsCode);
+    Tts.stop();
+
+    const speech = [
+      `${t(selectedLanguage, 'farmStatusIs')} ${voiceStatus}.`,
+      latestAlert?.message || '',
+      weather
+        ? `${t(selectedLanguage, 'weatherNow')}: ${Math.round(Number(weather.temperatureC))} degree. ${t(selectedLanguage, weather.conditionKey)}.`
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    Tts.speak(speech);
+  };
+
+  const showComingSoon = () => {
+    Alert.alert('Coming Soon', 'This feature will be available in the next update.');
+  };
+
   return (
     <View style={styles.container}>
       <ImageBackground source={farmImage} style={styles.background} resizeMode="cover">
@@ -182,10 +207,10 @@ export default function HomeScreen({
               </View>
             </View>
             <View style={styles.headerRight}>
-              <TouchableOpacity style={styles.iconButton}>
+              <TouchableOpacity style={styles.iconButton} onPress={showComingSoon}>
                 <Text style={styles.iconButtonText}>⚙️</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.bellButton}>
+              <TouchableOpacity style={styles.bellButton} onPress={onAlerts}>
                 <Text style={styles.bellIcon}>🔔</Text>
                 <View style={styles.notificationBadge}>
                   <Text style={styles.notificationCount}>3</Text>
@@ -275,7 +300,7 @@ export default function HomeScreen({
                   . {t(selectedLanguage, 'tapToHearMore')}"
                 </Text>
               </View>
-              <TouchableOpacity style={styles.voicePlayBtn}>
+              <TouchableOpacity style={styles.voicePlayBtn} onPress={handleVoicePlay}>
                 <Text style={styles.voicePlayIcon}>▶</Text>
               </TouchableOpacity>
             </View>
@@ -348,14 +373,14 @@ export default function HomeScreen({
               <Text style={[styles.navLabel, styles.navLabelActive]}>{t(selectedLanguage, 'home')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.navTab}>
+            <TouchableOpacity style={styles.navTab} onPress={onCropDoctor}>
               <Text style={styles.navIcon}>🌾</Text>
               <Text style={styles.navLabel}>{t(selectedLanguage, 'farm')}</Text>
             </TouchableOpacity>
 
             {/* Center FAB */}
             <View style={styles.fabContainer}>
-              <TouchableOpacity style={styles.fab}>
+              <TouchableOpacity style={styles.fab} onPress={handleVoicePlay}>
                 <View style={styles.fabInner}>
                   <Text style={styles.fabIcon}>🎤</Text>
                 </View>
@@ -368,7 +393,7 @@ export default function HomeScreen({
               <Text style={styles.navLabel}>{t(selectedLanguage, 'market')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.navTab}>
+            <TouchableOpacity style={styles.navTab} onPress={showComingSoon}>
               <Text style={styles.navIcon}>👤</Text>
               <Text style={styles.navLabel}>{t(selectedLanguage, 'profile')}</Text>
             </TouchableOpacity>

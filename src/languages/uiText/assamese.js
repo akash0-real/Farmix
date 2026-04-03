@@ -200,7 +200,20 @@ const Assamese = {
   "cropDoctorBeforeSpraying": "Before Spraying",
   "cropDoctorScanAnother": "Scan Another Crop",
   "cropDoctorCameraOpenFailed": "Camera could not be opened.",
-  "cropDoctorImageIncomplete": "The captured image was incomplete. Please try again."
+  "cropDoctorImageIncomplete": "The captured image was incomplete. Please try again.",
+  "mandiListen": "Listen",
+  "mandiForLocation": "For",
+  "mandiRefresh": "Refresh",
+  "mandiLoading": "Loading mandi prices...",
+  "mandiRetry": "Try Again",
+  "mandiNoData": "No mandi prices found right now.",
+  "mandiErrorLoading": "Failed to load mandi prices. Please try again.",
+  "mandiTtsSummary": "Top mandi update for {district} {state}: {crop} in {market} has modal price {modal} rupees per quintal. Showing {count} records.",
+  "mandiModalPrice": "Modal",
+  "mandiMarket": "Market",
+  "mandiDistrict": "District",
+  "mandiMinPrice": "Min",
+  "mandiMaxPrice": "Max"
 };
 
 export default Assamese;
