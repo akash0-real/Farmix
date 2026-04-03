@@ -13,34 +13,30 @@ import {
 import Tts from 'react-native-tts';
 import { useUser } from '../../context/UserContext';
 import { t } from '../../languages/uiText';
+import { getTtsCode } from '../../languages/languageConfig';
 
 const farmImage = require('../../assests/images/field.jpg');
-
-const WELCOME_MESSAGES = {
-  English: "Welcome to Farmix! Let's set up your profile. Please enter your name.",
-  Hindi: "Farmix mein aapka swagat hai! Aapki profile set karein. Kripya apna naam darj karein.",
-  Kannada: "Farmix ge swagata! Nimma profile set maadi. Dayavittu nimma hesaru haaki.",
-  Tamil: "Farmix il varaverpom! Ungal profile amaikkalaam. Ungal peyarai uLLidavum.",
-  Telugu: "Farmix ki swaagatam! Meeru profile set cheyandi. Dayachesi meeru peru ivvandi.",
-  Punjabi: "Farmix vich tuhadaa svaagat hai! Profile set karo. Apna naam daao.",
-  Malayalam: "Farmix il swagatham! Profile set cheyyaam. Dayavayi ningalude peru nalkuka.",
-  Marathi: "Farmix madhe swagat! Profile set kara. Tumcha naav dya.",
-  Bengali: "Farmix e swagatam! Profile set korun. Apnar naam din.",
-  Gujarati: "Farmix ma swagatam! Profile set karo. Tamaru naam aapo.",
-  Odia: "Farmix re swagatam! Profile set karantu. Aapnanka naama diyantu.",
-  Assamese: "Farmix at swaagotom! Profile set koruk. Apunar naam diyok.",
-  Urdu: "Farmix mein khush aamdeed! Profile set karein. Apna naam darj karein.",
-};
 
 export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
   const { updateOnboardingData, onboardingData } = useUser();
   const [name, setName] = useState(onboardingData.name || '');
   const [error, setError] = useState('');
 
+  const speakInSelectedLanguage = (message) => {
+    const ttsCode = getTtsCode(selectedLanguage);
+    Tts.setDefaultLanguage(ttsCode);
+    Tts.stop();
+    Tts.speak(message);
+  };
+
+  const getWelcomeMessage = () => (
+    `${t(selectedLanguage, 'onboardingNameTitle')} ${t(selectedLanguage, 'onboardingNameSubtitle')}`
+  );
+
   useEffect(() => {
-    const message = WELCOME_MESSAGES[selectedLanguage] || WELCOME_MESSAGES.English;
+    const message = getWelcomeMessage();
     setTimeout(() => {
-      Tts.speak(message);
+      speakInSelectedLanguage(message);
     }, 500);
     return () => Tts.stop();
   }, [selectedLanguage]);
@@ -55,9 +51,7 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
   };
 
   const speakWelcome = () => {
-    const message = WELCOME_MESSAGES[selectedLanguage] || WELCOME_MESSAGES.English;
-    Tts.stop();
-    Tts.speak(message);
+    speakInSelectedLanguage(getWelcomeMessage());
   };
 
   return (

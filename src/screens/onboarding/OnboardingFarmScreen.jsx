@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,37 +14,9 @@ import {
 import Tts from 'react-native-tts';
 import { useUser } from '../../context/UserContext';
 import { t } from '../../languages/uiText';
+import { getTtsCode } from '../../languages/languageConfig';
 
 const farmImage = require('../../assests/images/field.jpg');
-
-const FARM_TYPES = [
-  { id: 'irrigated', label: 'Irrigated', icon: '💧', desc: 'Canal/Well/Tube-well' },
-  { id: 'rainfed', label: 'Rainfed', icon: '🌧️', desc: 'Depends on rainfall' },
-  { id: 'mixed', label: 'Mixed', icon: '🔄', desc: 'Both irrigation & rain' },
-];
-
-const COMMON_CROPS = [
-  { id: 'wheat', label: 'Wheat', icon: '🌾' },
-  { id: 'rice', label: 'Rice', icon: '🍚' },
-  { id: 'cotton', label: 'Cotton', icon: '☁️' },
-  { id: 'sugarcane', label: 'Sugarcane', icon: '🎋' },
-  { id: 'maize', label: 'Maize', icon: '🌽' },
-  { id: 'soybean', label: 'Soybean', icon: '🫘' },
-  { id: 'groundnut', label: 'Groundnut', icon: '🥜' },
-  { id: 'pulses', label: 'Pulses', icon: '🫛' },
-  { id: 'vegetables', label: 'Vegetables', icon: '🥬' },
-  { id: 'fruits', label: 'Fruits', icon: '🍎' },
-  { id: 'millets', label: 'Millets', icon: '🌿' },
-  { id: 'other', label: 'Other', icon: '🌱' },
-];
-
-const FARM_MESSAGES = {
-  English: "Almost done! Tell us about your farm size and what you grow.",
-  Hindi: "Lagbhag ho gaya! Apne khet ka size aur fasal batayein.",
-  Kannada: "Hogutiruva! Nimma tota size mattu bele heli.",
-  Tamil: "Kitta mudinthuvittom! Ungal pannai alavum payirum sollungal.",
-  Telugu: "Daaadapu ayyindi! Meeru polu size mariyu pantalu cheppandi.",
-};
 
 export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onBack }) {
   const { finishOnboarding, onboardingData } = useUser();
@@ -54,10 +26,44 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const speakInSelectedLanguage = (message) => {
+    const ttsCode = getTtsCode(selectedLanguage);
+    Tts.setDefaultLanguage(ttsCode);
+    Tts.stop();
+    Tts.speak(message);
+  };
+
+  const getFarmMessage = () => (
+    `${t(selectedLanguage, 'farmDetailsTitle')}. ${t(selectedLanguage, 'farmDetailsSubtitle')}`
+  );
+
+  // Translated farm types
+  const FARM_TYPES = useMemo(() => [
+    { id: 'irrigated', label: t(selectedLanguage, 'irrigated'), icon: '💧', desc: t(selectedLanguage, 'irrigatedDesc') },
+    { id: 'rainfed', label: t(selectedLanguage, 'rainfed'), icon: '🌧️', desc: t(selectedLanguage, 'rainfedDesc') },
+    { id: 'mixed', label: t(selectedLanguage, 'mixed'), icon: '🔄', desc: t(selectedLanguage, 'mixedDesc') },
+  ], [selectedLanguage]);
+
+  // Translated crops
+  const COMMON_CROPS = useMemo(() => [
+    { id: 'wheat', label: t(selectedLanguage, 'wheat'), icon: '🌾' },
+    { id: 'rice', label: t(selectedLanguage, 'rice'), icon: '🍚' },
+    { id: 'cotton', label: t(selectedLanguage, 'cotton'), icon: '☁️' },
+    { id: 'sugarcane', label: t(selectedLanguage, 'sugarcane'), icon: '🎋' },
+    { id: 'maize', label: t(selectedLanguage, 'maize'), icon: '🌽' },
+    { id: 'soybean', label: t(selectedLanguage, 'soybean'), icon: '🫘' },
+    { id: 'groundnut', label: t(selectedLanguage, 'groundnut'), icon: '🥜' },
+    { id: 'pulses', label: t(selectedLanguage, 'pulses'), icon: '🫛' },
+    { id: 'vegetables', label: t(selectedLanguage, 'vegetables'), icon: '🥬' },
+    { id: 'fruits', label: t(selectedLanguage, 'fruits'), icon: '🍎' },
+    { id: 'millets', label: t(selectedLanguage, 'millets'), icon: '🌿' },
+    { id: 'other', label: t(selectedLanguage, 'other'), icon: '🌱' },
+  ], [selectedLanguage]);
+
   useEffect(() => {
-    const message = FARM_MESSAGES[selectedLanguage] || FARM_MESSAGES.English;
+    const message = getFarmMessage();
     setTimeout(() => {
-      Tts.speak(message);
+      speakInSelectedLanguage(message);
     }, 300);
     return () => Tts.stop();
   }, [selectedLanguage]);
@@ -105,9 +111,7 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
   };
 
   const speakHelp = () => {
-    const message = FARM_MESSAGES[selectedLanguage] || FARM_MESSAGES.English;
-    Tts.stop();
-    Tts.speak(message);
+    speakInSelectedLanguage(getFarmMessage());
   };
 
   return (
