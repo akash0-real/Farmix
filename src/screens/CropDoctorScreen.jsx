@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  ImageBackground,
   PermissionsAndroid,
   Platform,
   Pressable,
@@ -15,6 +16,9 @@ import {
 import { launchCamera } from 'react-native-image-picker';
 import { detectCropDiseaseAI } from '../services/cropDoctorService';
 import { publishDiseaseAlert } from '../services/alertService';
+import { t } from '../languages/uiText';
+
+const farmImage = require('../assests/images/field.jpg');
 
 function extractRetrySeconds(message) {
   const match = String(message || '').match(/retry in\s+([\d.]+)s/i);
@@ -239,237 +243,262 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={onBack} style={styles.backBtn}>
-          <Text style={styles.backText}>← Back</Text>
-        </Pressable>
-        <Text style={styles.title}>🌿 Crop Doctor</Text>
-        <View style={{ width: 60 }} />
-      </View>
-
-      <Text style={styles.subtitle}>
-        Take a clear photo of the affected leaf or fruit and Farmix AI will
-        diagnose the disease instantly.
-      </Text>
-
-      {/* Hero Image Card */}
-      <View style={styles.heroCard}>
-        {capturedImage?.uri ? (
-          <Image
-            source={{ uri: capturedImage.uri }}
-            style={styles.previewImage}
-          />
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📸</Text>
-            <Text style={styles.emptyTitle}>No crop photo yet</Text>
-            <Text style={styles.emptyText}>
-              Point the camera at the damaged area in bright light for the best
-              result.
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Buttons */}
-      <View style={styles.buttonRow}>
-        <Pressable style={styles.primaryButton} onPress={handleCapture}>
-          <Text style={styles.primaryButtonText}>
-            {capturedImage ? '📷 Retake' : '📷 Open Camera'}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.secondaryButton,
-            (!capturedImage || isScanning) && styles.buttonDisabled,
-          ]}
-          onPress={handleAnalyze}
-          disabled={!capturedImage || isScanning}
+    <View style={styles.container}>
+      <ImageBackground source={farmImage} style={styles.background} resizeMode="cover">
+        <View style={styles.overlayTop} />
+        <View style={styles.overlayGradient} />
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
         >
-          {isScanning ? (
-            <ActivityIndicator color="#1a6b3a" />
-          ) : (
-            <Text style={styles.secondaryButtonText}>🔍 Analyze</Text>
-          )}
-        </Pressable>
-      </View>
-
-      {capturedImage && (
-        <Pressable style={styles.resetLink} onPress={handleReset}>
-          <Text style={styles.resetText}>Clear photo</Text>
-        </Pressable>
-      )}
-
-      {/* Tips */}
-      {!scanResult && (
-        <View style={styles.tipCard}>
-          <Text style={styles.tipTitle}>📋 Photo tips</Text>
-          <Text style={styles.tipText}>
-            • Capture one leaf or fruit close-up
-          </Text>
-          <Text style={styles.tipText}>
-            • Avoid shadows and blurry movement
-          </Text>
-          <Text style={styles.tipText}>
-            • Include the damaged part in full frame
-          </Text>
-        </View>
-      )}
-
-      {/* Results */}
-      {scanResult && (
-        <>
-          {/* Severity Banner */}
-          <View
-            style={[
-              styles.severityBanner,
-              {
-                backgroundColor:
-                  scanResult.severity === 'High'
-                    ? '#c0392b'
-                    : scanResult.severity === 'Moderate'
-                    ? '#e8a83a'
-                    : '#2d8a52',
-              },
-            ]}
-          >
-            <Text style={styles.severityBannerText}>
-              {scanResult.severity === 'High'
-                ? '🔴'
-                : scanResult.severity === 'Moderate'
-                ? '🟡'
-                : '🟢'}{' '}
-              {scanResult.severity?.toUpperCase()} SEVERITY
-            </Text>
+          <View style={styles.header}>
+            <Pressable onPress={onBack} style={styles.backBtn}>
+              <Text style={styles.backText}>{t(selectedLanguage, 'backArrow')}</Text>
+            </Pressable>
+            <Text style={styles.title}>🌿 {t(selectedLanguage, 'cropDoctor')}</Text>
+            <View style={styles.headerSpacer} />
           </View>
 
-          {/* Main Result Card */}
-          <View style={styles.resultCard}>
-            <Text style={styles.resultLabel}>LIKELY DIAGNOSIS</Text>
-            <Text style={styles.resultTitle}>{scanResult.diseaseName}</Text>
-            <Text style={styles.cropText}>
-              Identified in: {scanResult.crop}
-            </Text>
+          <Text style={styles.subtitle}>
+            {t(selectedLanguage, 'aiDiseaseDetection')}
+          </Text>
 
-            <View style={styles.confidenceRow}>
-              <View style={styles.confidenceBadge}>
-                <Text style={styles.confidenceNum}>
-                  {scanResult.confidence === 'High'
-                    ? '94.2%'
-                    : scanResult.confidence === 'Medium'
-                    ? '72.5%'
-                    : '45.0%'}
+          <View style={styles.heroCard}>
+            {capturedImage?.uri ? (
+              <Image
+                source={{ uri: capturedImage.uri }}
+                style={styles.previewImage}
+              />
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>📸</Text>
+                <Text style={styles.emptyTitle}>No crop photo yet</Text>
+                <Text style={styles.emptyText}>
+                  Point the camera at the damaged area in bright light for the best
+                  result.
                 </Text>
-                <Text style={styles.confidenceLabel}>CONFIDENCE SCORE</Text>
               </View>
-              <View style={styles.checkCircle}>
-                <Text style={styles.checkIcon}>✓</Text>
-              </View>
+            )}
+          </View>
+
+          <View style={styles.buttonRow}>
+            <Pressable style={styles.primaryButton} onPress={handleCapture}>
+              <Text style={styles.primaryButtonText}>
+                {capturedImage ? '📷 Retake' : '📷 Open Camera'}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.secondaryButton,
+                (!capturedImage || isScanning) && styles.buttonDisabled,
+              ]}
+              onPress={handleAnalyze}
+              disabled={!capturedImage || isScanning}
+            >
+              {isScanning ? (
+                <ActivityIndicator color="#7eff8a" />
+              ) : (
+                <Text style={styles.secondaryButtonText}>🔍 Analyze</Text>
+              )}
+            </Pressable>
+          </View>
+
+          {capturedImage && (
+            <Pressable style={styles.resetLink} onPress={handleReset}>
+              <Text style={styles.resetText}>Clear photo</Text>
+            </Pressable>
+          )}
+
+          {!scanResult && (
+            <View style={styles.tipCard}>
+              <Text style={styles.tipTitle}>📋 Photo tips</Text>
+              <Text style={styles.tipText}>
+                • Capture one leaf or fruit close-up
+              </Text>
+              <Text style={styles.tipText}>
+                • Avoid shadows and blurry movement
+              </Text>
+              <Text style={styles.tipText}>
+                • Include the damaged part in full frame
+              </Text>
             </View>
+          )}
 
-            <Text style={styles.summaryText}>{scanResult.summary}</Text>
-          </View>
+          {scanResult && (
+            <>
+              <View
+                style={[
+                  styles.severityBanner,
+                  {
+                    backgroundColor:
+                      scanResult.severity === 'High'
+                        ? 'rgba(255, 107, 107, 0.2)'
+                        : scanResult.severity === 'Moderate'
+                        ? 'rgba(255, 217, 102, 0.18)'
+                        : 'rgba(126, 255, 138, 0.18)',
+                    borderColor:
+                      scanResult.severity === 'High'
+                        ? 'rgba(255, 107, 107, 0.45)'
+                        : scanResult.severity === 'Moderate'
+                        ? 'rgba(255, 217, 102, 0.45)'
+                        : 'rgba(126, 255, 138, 0.45)',
+                  },
+                ]}
+              >
+                <Text style={styles.severityBannerText}>
+                  {scanResult.severity === 'High'
+                    ? '🔴'
+                    : scanResult.severity === 'Moderate'
+                    ? '🟡'
+                    : '🟢'}{' '}
+                  {scanResult.severity?.toUpperCase()} SEVERITY
+                </Text>
+              </View>
 
-          {/* Listen Button */}
-          <Pressable
-            style={styles.listenButton}
-            onPress={handleListenTreatment}
-          >
-            <Text style={styles.listenButtonText}>
-              🔊 Listen to Treatment Plan
-            </Text>
-          </Pressable>
+              <View style={styles.resultCard}>
+                <Text style={styles.resultLabel}>LIKELY DIAGNOSIS</Text>
+                <Text style={styles.resultTitle}>{scanResult.diseaseName}</Text>
+                <Text style={styles.cropText}>
+                  Identified in: {scanResult.crop}
+                </Text>
 
-          {/* Community Alert Card */}
-          <View style={styles.alertCard}>
-            <Text style={styles.alertCardTitle}>⚠️ Community Alert Sent!</Text>
-            <Text style={styles.alertCardText}>
-              {scanResult.severity === 'High'
-                ? '280 farmers within 20km have been notified'
-                : scanResult.severity === 'Moderate'
-                ? '150 farmers within 8km have been notified'
-                : '50 farmers within 3km have been notified'}
-            </Text>
-          </View>
+                <View style={styles.confidenceRow}>
+                  <View style={styles.confidenceBadge}>
+                    <Text style={styles.confidenceNum}>
+                      {scanResult.confidence === 'High'
+                        ? '94.2%'
+                        : scanResult.confidence === 'Medium'
+                        ? '72.5%'
+                        : '45.0%'}
+                    </Text>
+                    <Text style={styles.confidenceLabel}>CONFIDENCE SCORE</Text>
+                  </View>
+                  <View style={styles.checkCircle}>
+                    <Text style={styles.checkIcon}>✓</Text>
+                  </View>
+                </View>
 
-          {/* Treatment Steps */}
-          <ResultSection
-            title="🌿 Treatment Steps"
-            items={scanResult.treatment}
-          />
+                <Text style={styles.summaryText}>{scanResult.summary}</Text>
+              </View>
 
-          {/* Prevention Tips */}
-          <ResultSection
-            title="🛡️ Prevention Tips"
-            items={scanResult.prevention}
-          />
+              <Pressable
+                style={styles.listenButton}
+                onPress={handleListenTreatment}
+              >
+                <Text style={styles.listenButtonText}>
+                  🔊 Listen to Treatment Plan
+                </Text>
+              </Pressable>
 
-          <PredictionSection predictions={scanResult.topPredictions} />
+              <View style={styles.alertCard}>
+                <Text style={styles.alertCardTitle}>⚠️ Community Alert Sent!</Text>
+                <Text style={styles.alertCardText}>
+                  {scanResult.severity === 'High'
+                    ? '280 farmers within 20km have been notified'
+                    : scanResult.severity === 'Moderate'
+                    ? '150 farmers within 8km have been notified'
+                    : '50 farmers within 3km have been notified'}
+                </Text>
+              </View>
 
-          {/* Disclaimer */}
-          <View style={styles.disclaimerCard}>
-            <Text style={styles.disclaimerTitle}>⚠️ Before Spraying</Text>
-            <Text style={styles.disclaimerText}>{scanResult.disclaimer}</Text>
-          </View>
+              <ResultSection
+                title="🌿 Treatment Steps"
+                items={scanResult.treatment}
+              />
 
-          {/* Scan Again */}
-          <Pressable style={styles.scanAgainButton} onPress={handleReset}>
-            <Text style={styles.scanAgainText}>📸 Scan Another Crop</Text>
-          </Pressable>
-        </>
-      )}
-    </ScrollView>
+              <ResultSection
+                title="🛡️ Prevention Tips"
+                items={scanResult.prevention}
+              />
+
+              <PredictionSection predictions={scanResult.topPredictions} />
+
+              <View style={styles.disclaimerCard}>
+                <Text style={styles.disclaimerTitle}>⚠️ Before Spraying</Text>
+                <Text style={styles.disclaimerText}>{scanResult.disclaimer}</Text>
+              </View>
+
+              <Pressable style={styles.scanAgainButton} onPress={handleReset}>
+                <Text style={styles.scanAgainText}>📸 Scan Another Crop</Text>
+              </Pressable>
+            </>
+          )}
+        </ScrollView>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f5f4',
+    backgroundColor: '#0a1f12',
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#0a1f12',
+  },
+  overlayTop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(5, 15, 8, 0.88)',
+  },
+  overlayGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(5, 20, 10, 0.4)',
+  },
+  scroll: {
+    flex: 1,
   },
   content: {
-    padding: 16,
+    padding: 18,
     paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 14,
+    marginTop: 4,
   },
   backBtn: {
-    paddingVertical: 6,
-    paddingRight: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
   },
   backText: {
-    color: '#1a6b3a',
-    fontSize: 15,
+    color: '#dfffe4',
+    fontSize: 13,
     fontWeight: '700',
   },
+  headerSpacer: {
+    width: 66,
+  },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#14301f',
+    fontSize: 21,
+    fontWeight: '900',
+    color: '#ffffff',
   },
   subtitle: {
     fontSize: 14,
-    lineHeight: 21,
-    color: '#576577',
-    marginBottom: 16,
+    lineHeight: 20,
+    color: 'rgba(255,255,255,0.72)',
+    marginBottom: 14,
   },
   heroCard: {
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#dce7da',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     minHeight: 240,
     borderWidth: 1,
-    borderColor: '#d3ddd4',
+    borderColor: 'rgba(255,255,255,0.16)',
     marginBottom: 16,
   },
   previewImage: {
@@ -489,13 +518,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#14301f',
+    color: '#ffffff',
   },
   emptyText: {
     marginTop: 8,
     fontSize: 13,
     lineHeight: 20,
-    color: '#5d6d61',
+    color: 'rgba(255,255,255,0.68)',
     textAlign: 'center',
   },
   buttonRow: {
@@ -505,8 +534,8 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     flex: 1,
-    borderRadius: 14,
-    backgroundColor: '#1a6b3a',
+    borderRadius: 16,
+    backgroundColor: '#2f8d41',
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -517,15 +546,15 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     flex: 1,
-    borderRadius: 14,
-    backgroundColor: '#e6efe6',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#bdd0bf',
+    borderColor: 'rgba(126,255,138,0.35)',
   },
   secondaryButtonText: {
-    color: '#1a6b3a',
+    color: '#dfffe4',
     fontSize: 15,
     fontWeight: '800',
   },
@@ -537,31 +566,32 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   resetText: {
-    color: '#7b4d1d',
+    color: '#ffd966',
     fontWeight: '700',
     fontSize: 13,
   },
   tipCard: {
-    borderRadius: 16,
-    backgroundColor: '#fffaf0',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 217, 102, 0.12)',
     borderWidth: 1,
-    borderColor: '#efd8a8',
+    borderColor: 'rgba(255, 217, 102, 0.4)',
     padding: 14,
     marginTop: 4,
   },
   tipTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#7b4d1d',
+    color: '#ffe9a6',
     marginBottom: 8,
   },
   tipText: {
     fontSize: 13,
     lineHeight: 21,
-    color: '#8a6a3a',
+    color: 'rgba(255, 233, 166, 0.95)',
   },
   severityBanner: {
     borderRadius: 12,
+    borderWidth: 1,
     paddingVertical: 10,
     paddingHorizontal: 16,
     marginTop: 8,
@@ -569,44 +599,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   severityBannerText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 1,
   },
   resultCard: {
-    borderRadius: 18,
-    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
     padding: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
     marginBottom: 12,
   },
   resultLabel: {
     fontSize: 11,
     letterSpacing: 1.5,
-    color: '#7f8f82',
+    color: 'rgba(255,255,255,0.6)',
     marginBottom: 4,
     fontWeight: '700',
   },
   resultTitle: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#153321',
+    color: '#fff',
     marginBottom: 4,
   },
   cropText: {
     fontSize: 13,
-    color: '#6e7f74',
+    color: 'rgba(255,255,255,0.74)',
     marginBottom: 14,
   },
   confidenceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f5faf6',
+    backgroundColor: 'rgba(126,255,138,0.1)',
     borderRadius: 12,
     padding: 12,
     marginBottom: 14,
@@ -615,11 +643,11 @@ const styles = StyleSheet.create({
   confidenceNum: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#1a6b3a',
+    color: '#7eff8a',
   },
   confidenceLabel: {
     fontSize: 10,
-    color: '#7f8f82',
+    color: 'rgba(255,255,255,0.62)',
     letterSpacing: 1,
     fontWeight: '700',
   },
@@ -627,7 +655,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a6b3a',
+    backgroundColor: '#2f8d41',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -639,11 +667,11 @@ const styles = StyleSheet.create({
   summaryText: {
     fontSize: 14,
     lineHeight: 22,
-    color: '#435465',
+    color: 'rgba(255,255,255,0.84)',
   },
   listenButton: {
-    backgroundColor: '#1a6b3a',
-    borderRadius: 14,
+    backgroundColor: '#2f8d41',
+    borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 12,
@@ -654,9 +682,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   alertCard: {
-    backgroundColor: '#fff3f3',
+    backgroundColor: 'rgba(255, 107, 107, 0.12)',
     borderLeftWidth: 4,
-    borderLeftColor: '#c0392b',
+    borderLeftColor: '#ff6b6b',
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
@@ -664,29 +692,31 @@ const styles = StyleSheet.create({
   alertCardTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#c0392b',
+    color: '#ff8d8d',
     marginBottom: 4,
   },
   alertCardText: {
     fontSize: 13,
-    color: '#888',
+    color: 'rgba(255,255,255,0.75)',
   },
   sectionCard: {
     marginBottom: 12,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
     padding: 16,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#153321',
+    color: '#fff',
     marginBottom: 10,
   },
   listItem: {
     fontSize: 14,
     lineHeight: 22,
-    color: '#435465',
+    color: 'rgba(255,255,255,0.82)',
     marginBottom: 6,
   },
   predictionRow: {
@@ -697,14 +727,14 @@ const styles = StyleSheet.create({
   },
   predictionLabel: {
     fontSize: 14,
-    color: '#335144',
+    color: 'rgba(255,255,255,0.82)',
     flex: 1,
     marginRight: 8,
   },
   predictionConfidence: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#1a6b3a',
+    color: '#7eff8a',
   },
   retakeCard: {
     marginBottom: 12,
@@ -728,33 +758,33 @@ const styles = StyleSheet.create({
   disclaimerCard: {
     marginBottom: 12,
     borderRadius: 16,
-    backgroundColor: '#fff3f0',
+    backgroundColor: 'rgba(255, 217, 102, 0.1)',
     borderWidth: 1,
-    borderColor: '#f0c5b9',
+    borderColor: 'rgba(255, 217, 102, 0.35)',
     padding: 16,
   },
   disclaimerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#9c4027',
+    color: '#ffe9a6',
     marginBottom: 8,
   },
   disclaimerText: {
     fontSize: 14,
     lineHeight: 21,
-    color: '#8f503e',
+    color: 'rgba(255,255,255,0.8)',
   },
   scanAgainButton: {
-    backgroundColor: '#f0f7f1',
-    borderWidth: 2,
-    borderColor: '#1a6b3a',
-    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(126,255,138,0.5)',
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 4,
   },
   scanAgainText: {
-    color: '#1a6b3a',
+    color: '#dfffe4',
     fontSize: 15,
     fontWeight: '800',
   },
