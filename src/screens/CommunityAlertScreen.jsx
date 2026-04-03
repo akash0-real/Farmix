@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   getCommunityAlerts,
   subscribeToCommunityAlerts,
 } from '../services/alertService';
 import { t } from '../languages/uiText';
 
-export default function CommunityAlertScreen({ selectedLanguage }) {
+export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
   const [alerts, setAlerts] = useState(() => getCommunityAlerts());
 
   useEffect(() => {
@@ -19,6 +19,11 @@ export default function CommunityAlertScreen({ selectedLanguage }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.headerRow}>
+        <Pressable style={styles.backBtn} onPress={onBack}>
+          <Text style={styles.backText}>{t(selectedLanguage, 'backArrow')}</Text>
+        </Pressable>
+      </View>
       <Text style={styles.title}>{t(selectedLanguage, 'communityAlerts')}</Text>
       <Text style={styles.subtitle}>
         {t(selectedLanguage, 'severityBasedAlerts')}
@@ -58,6 +63,21 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 24,
+  },
+  headerRow: {
+    marginBottom: 8,
+  },
+  backBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: '#e8eeea',
+  },
+  backText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1a6b3a',
   },
   title: {
     fontSize: 28,

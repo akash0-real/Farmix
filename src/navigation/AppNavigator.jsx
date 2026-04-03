@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { BackHandler, StyleSheet, View } from 'react-native';
 import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
 import CropDoctorScreen from '../screens/CropDoctorScreen';
@@ -17,6 +17,18 @@ const SCREEN_MAP = {
 export default function AppNavigator({ selectedLanguage }) {
   const [activeScreen, setActiveScreen] = useState('Home');
   const ActiveComponent = SCREEN_MAP[activeScreen] || HomeScreen;
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (activeScreen !== 'Home') {
+        setActiveScreen('Home');
+        return true;
+      }
+      return false;
+    });
+
+    return () => subscription.remove();
+  }, [activeScreen]);
 
   const sharedScreenProps =
     activeScreen === 'Home'
