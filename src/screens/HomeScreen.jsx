@@ -17,8 +17,6 @@ import { fetchWeatherByLocation } from '../services/weatherService';
 import { useUser } from '../context/UserContext';
 import { t } from '../languages/uiText';
 import { getTtsCode } from '../languages/languageConfig';
-import Tts from 'react-native-tts';
-import { getTtsCode } from '../languages/languageConfig';
 
 const farmImage = require('../assests/images/field.jpg');
 

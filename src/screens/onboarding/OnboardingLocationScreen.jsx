@@ -9,8 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Modal,
-  FlatList,
+  TouchableOpacity,
 } from 'react-native';
 import Tts from 'react-native-tts';
 import { useUser } from '../../context/UserContext';
@@ -518,15 +517,17 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
                 {/* State Picker */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>{t(selectedLanguage, 'stateLabel')}</Text>
-                  <Pressable
+                  <TouchableOpacity
                     style={styles.pickerButton}
                     onPress={() => setShowStatePicker(true)}
+                    activeOpacity={0.85}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Text style={state ? styles.pickerText : styles.pickerPlaceholder}>
                       {state ? getLocalizedStateName(state) : t(selectedLanguage, 'statePlaceholder')}
                     </Text>
                     <Text style={styles.pickerArrow}>▼</Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 </View>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -560,23 +561,23 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
           </ScrollView>
         </KeyboardAvoidingView>
 
-        {/* State Picker Modal */}
-        <Modal
-          visible={showStatePicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowStatePicker(false)}
-        >
+        {/* State Picker Sheet */}
+        {showStatePicker ? (
           <View style={styles.modalOverlay}>
+            <Pressable
+              style={styles.modalBackdrop}
+              onPress={() => setShowStatePicker(false)}
+            />
             <View style={styles.modalContent}>
               <View style={styles.modalHandle} />
               <Text style={styles.modalTitle}>{t(selectedLanguage, 'selectState')}</Text>
-              <FlatList
-                data={INDIAN_STATES}
-                keyExtractor={(item) => item}
+              <ScrollView
                 style={styles.stateList}
-                renderItem={({ item }) => (
+                showsVerticalScrollIndicator={false}
+              >
+                {INDIAN_STATES.map(item => (
                   <Pressable
+                    key={item}
                     style={[
                       styles.stateItem,
                       state === item && styles.stateItemActive,
@@ -597,8 +598,8 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
                     </Text>
                     {state === item && <Text style={styles.checkMark}>✓</Text>}
                   </Pressable>
-                )}
-              />
+                ))}
+              </ScrollView>
               <Pressable
                 style={styles.modalCloseButton}
                 onPress={() => setShowStatePicker(false)}
@@ -607,7 +608,7 @@ export default function OnboardingLocationScreen({ selectedLanguage, onNext, onB
               </Pressable>
             </View>
           </View>
-        </Modal>
+        ) : null}
       </ImageBackground>
     </View>
   );
@@ -852,9 +853,13 @@ const styles = StyleSheet.create({
 
   // Modal
   modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
     justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.7)',
   },
   modalContent: {
     backgroundColor: 'rgba(8, 28, 15, 0.98)',
