@@ -33,6 +33,20 @@ const STORAGE_KEYS = {
   AUTH_STATE: 'auth_state',
 };
 
+function getUserProfileStorageKey(uid) {
+  return `${STORAGE_KEYS.USER_PROFILE}:${uid}`;
+}
+
+async function readLegacyUserProfile() {
+  const legacyProfile = await storage.getItem(STORAGE_KEYS.USER_PROFILE);
+  if (!legacyProfile) return null;
+  try {
+    return JSON.parse(legacyProfile);
+  } catch (error) {
+    return null;
+  }
+}
+
 // Hardcoded OTP for testing
 const HARDCODED_OTP = '547333';
 
@@ -63,12 +77,8 @@ export function getCurrentUserPhone() {
  */
 export async function checkUserExists(uid) {
   try {
-    const profile = await storage.getItem(STORAGE_KEYS.USER_PROFILE);
-    if (profile) {
-      const parsed = JSON.parse(profile);
-      return parsed.onboardingCompleted === true;
-    }
-    return false;
+    const profile = await getUserProfile(uid);
+    return profile?.onboardingCompleted === true;
   } catch (error) {
     console.error('Error checking user exists:', error);
     return false;
@@ -82,10 +92,19 @@ export async function checkUserExists(uid) {
  */
 export async function getUserProfile(uid) {
   try {
-    const profile = await storage.getItem(STORAGE_KEYS.USER_PROFILE);
+    const profileKey = getUserProfileStorageKey(uid);
+    const profile = await storage.getItem(profileKey);
     if (profile) {
       return JSON.parse(profile);
     }
+
+    // Legacy migration path: older builds stored a single shared user profile.
+    const legacyProfile = await readLegacyUserProfile();
+    if (legacyProfile) {
+      await storage.setItem(profileKey, JSON.stringify(legacyProfile));
+      return legacyProfile;
+    }
+
     return null;
   } catch (error) {
     console.error('Error getting user profile:', error);
@@ -101,14 +120,15 @@ export async function getUserProfile(uid) {
  */
 export async function saveUserProfile(uid, data) {
   try {
-    const existing = await storage.getItem(STORAGE_KEYS.USER_PROFILE);
-    const existingData = existing ? JSON.parse(existing) : {};
+    const profileKey = getUserProfileStorageKey(uid);
+    const existing = await storage.getItem(profileKey);
+    const existingData = existing ? JSON.parse(existing) : (await readLegacyUserProfile()) || {};
     const updatedProfile = {
       ...existingData,
       ...data,
       updatedAt: new Date().toISOString(),
     };
-    await storage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(updatedProfile));
+    await storage.setItem(profileKey, JSON.stringify(updatedProfile));
   } catch (error) {
     console.error('Error saving user profile:', error);
     throw new Error('Failed to save profile. Please try again.');
@@ -125,11 +145,12 @@ export async function completeOnboarding(uid, profileData) {
   try {
     const profile = {
       ...profileData,
+      uid,
       onboardingCompleted: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    await storage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
+    await storage.setItem(getUserProfileStorageKey(uid), JSON.stringify(profile));
   } catch (error) {
     console.error('Error completing onboarding:', error);
     throw new Error('Failed to complete setup. Please try again.');

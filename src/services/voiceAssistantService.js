@@ -1,25 +1,155 @@
-import { NativeModules, PermissionsAndroid, Platform } from 'react-native';
+import {
+  NativeEventEmitter,
+  NativeModules,
+  PermissionsAndroid,
+  Platform,
+} from 'react-native';
 
-let Voice = null;
+let VoiceLibrary = null;
 try {
   // eslint-disable-next-line global-require
   const voiceModule = require('@react-native-voice/voice');
-  Voice = voiceModule?.default || voiceModule;
+  VoiceLibrary = voiceModule?.default || voiceModule;
 } catch (error) {
-  Voice = null;
+  VoiceLibrary = null;
 }
 
-function hasNativeVoiceModule() {
-  return Boolean(NativeModules?.Voice);
+function getNativeVoiceModule() {
+  return NativeModules?.Voice || NativeModules?.RCTVoice || null;
+}
+
+function createVoiceAdapter(nativeVoiceModule) {
+  if (!nativeVoiceModule) {
+    return null;
+  }
+
+  let listeners = null;
+  const events = {
+    onSpeechStart: () => {},
+    onSpeechRecognized: () => {},
+    onSpeechEnd: () => {},
+    onSpeechError: () => {},
+    onSpeechResults: () => {},
+    onSpeechPartialResults: () => {},
+    onSpeechVolumeChanged: () => {},
+  };
+
+  const ensureListeners = () => {
+    if (listeners || Platform.OS === 'web') {
+      return;
+    }
+    const emitter = new NativeEventEmitter(nativeVoiceModule);
+    listeners = Object.keys(events).map(key => emitter.addListener(key, events[key]));
+  };
+
+  const clearListeners = () => {
+    if (!listeners) {
+      return;
+    }
+    listeners.forEach(listener => listener.remove());
+    listeners = null;
+  };
+
+  return {
+    set onSpeechStart(fn) {
+      events.onSpeechStart = fn;
+    },
+    set onSpeechRecognized(fn) {
+      events.onSpeechRecognized = fn;
+    },
+    set onSpeechEnd(fn) {
+      events.onSpeechEnd = fn;
+    },
+    set onSpeechError(fn) {
+      events.onSpeechError = fn;
+    },
+    set onSpeechResults(fn) {
+      events.onSpeechResults = fn;
+    },
+    set onSpeechPartialResults(fn) {
+      events.onSpeechPartialResults = fn;
+    },
+    set onSpeechVolumeChanged(fn) {
+      events.onSpeechVolumeChanged = fn;
+    },
+    removeAllListeners() {
+      clearListeners();
+    },
+    async start(locale, options = {}) {
+      ensureListeners();
+      return new Promise((resolve, reject) => {
+        nativeVoiceModule.startSpeech(
+          locale,
+          {
+            EXTRA_LANGUAGE_MODEL: 'LANGUAGE_MODEL_FREE_FORM',
+            EXTRA_MAX_RESULTS: 5,
+            EXTRA_PARTIAL_RESULTS: true,
+            REQUEST_PERMISSIONS_AUTO: true,
+            ...options,
+          },
+          error => {
+            if (error) {
+              reject(new Error(String(error)));
+            } else {
+              resolve();
+            }
+          },
+        );
+      });
+    },
+    async stop() {
+      return new Promise((resolve, reject) => {
+        nativeVoiceModule.stopSpeech(error => {
+          if (error) {
+            reject(new Error(String(error)));
+          } else {
+            resolve();
+          }
+        });
+      });
+    },
+    async destroy() {
+      return new Promise((resolve, reject) => {
+        nativeVoiceModule.destroySpeech(error => {
+          if (error) {
+            reject(new Error(String(error)));
+          } else {
+            clearListeners();
+            resolve();
+          }
+        });
+      });
+    },
+    async isAvailable() {
+      return new Promise((resolve, reject) => {
+        nativeVoiceModule.isSpeechAvailable((isAvailable, error) => {
+          if (error) {
+            reject(new Error(String(error)));
+          } else {
+            resolve(Boolean(isAvailable));
+          }
+        });
+      });
+    },
+  };
+}
+
+function getVoiceClient() {
+  const nativeVoiceModule = getNativeVoiceModule();
+  if (VoiceLibrary && NativeModules?.Voice) {
+    return VoiceLibrary;
+  }
+  return createVoiceAdapter(nativeVoiceModule);
 }
 
 export async function isVoiceRecognitionAvailable() {
-  if (!Voice || !hasNativeVoiceModule() || typeof Voice.isAvailable !== 'function') {
+  const voiceClient = getVoiceClient();
+  if (!voiceClient || typeof voiceClient.isAvailable !== 'function') {
     return false;
   }
 
   try {
-    const available = await Voice.isAvailable();
+    const available = await voiceClient.isAvailable();
     return Boolean(available);
   } catch (error) {
     return false;
@@ -109,6 +239,8 @@ const COMMAND_PATTERNS = {
   cropDoctor: /(crop doctor|scan|disease|doctor|फसल डॉक्टर|ಸ್ಕ್ಯಾನ್|டாக்டர்|డాక్టర్)/i,
   soilAnalysis: /(soil|soil test|soil analysis|मिट्टी|माटी|ಮಣ್ಣು|மண்|నేల)/i,
   mandi: /(mandi|price|market|भाव|मंडी|ಬೆಲೆ|விலை|ధర)/i,
+  buyerConnect: /(buyer|seller|sell|connection|खरीदार|विक्रेता|बेच|buyer connection|seller connection|खरीदार कनेक्शन|सेलर कनेक्शन)/i,
+  communityLessons: /(lesson|lessons|community lesson|share lesson|सीख|समुदाय सीख|अनुभव साझा|learn from farmers)/i,
   alerts: /(alert|warning|risk|अलर्ट|चेतावनी|ಎಚ್ಚರಿಕೆ|அலர்ட்|అలర్ట్)/i,
   weather: /(weather|rain|temperature|मौसम|ಹವಾಮಾನ|வானிலை|వాతావరణ)/i,
   govtSchemes: /(scheme|yojana|pm kisan|government|सरकारी योजना|ಯೋಜನೆ|திட்டம்|పథకం)/i,
@@ -167,7 +299,8 @@ export async function startVoiceSession({
   onEnd,
   autoStopMs = 9000,
 }) {
-  if (!Voice || !hasNativeVoiceModule()) {
+  const voiceClient = getVoiceClient();
+  if (!voiceClient || !getNativeVoiceModule()) {
     throw new Error('VOICE_NATIVE_MISSING');
   }
 
@@ -198,26 +331,26 @@ export async function startVoiceSession({
     }
   }
 
-  Voice.onSpeechStart = () => {
+  voiceClient.onSpeechStart = () => {
     if (typeof onStart === 'function') onStart();
   };
-  Voice.onSpeechEnd = () => {
+  voiceClient.onSpeechEnd = () => {
     if (typeof onEnd === 'function') onEnd();
   };
-  Voice.onSpeechError = event => {
+  voiceClient.onSpeechError = event => {
     if (typeof onError === 'function') onError(event);
   };
-  Voice.onSpeechResults = event => {
+  voiceClient.onSpeechResults = event => {
     const value = event?.value?.[0] || '';
     if (typeof onResults === 'function') onResults(value, event?.value || []);
   };
 
   try {
-    await Voice.start(locale);
+    await voiceClient.start(locale);
   } catch (primaryError) {
     // Fallback for devices where selected locale STT is unavailable.
     if (locale !== 'en-IN') {
-      await Voice.start('en-IN');
+      await voiceClient.start('en-IN');
     } else {
       throw primaryError;
     }
@@ -226,7 +359,7 @@ export async function startVoiceSession({
   if (autoStopMs > 0) {
     setTimeout(async () => {
       try {
-        await Voice.stop();
+        await voiceClient.stop();
       } catch (error) {
         // ignore stop race conditions
       }
@@ -235,24 +368,28 @@ export async function startVoiceSession({
 }
 
 export async function stopVoiceSession() {
-  if (!Voice) {
+  const voiceClient = getVoiceClient();
+  if (!voiceClient) {
     return;
   }
   try {
-    await Voice.stop();
+    await voiceClient.stop();
   } catch (error) {
     // ignore
   }
 }
 
 export async function destroyVoiceSession() {
-  if (!Voice) {
+  const voiceClient = getVoiceClient();
+  if (!voiceClient) {
     return;
   }
   try {
-    await Voice.destroy();
+    await voiceClient.destroy();
   } catch (error) {
     // ignore
   }
-  Voice.removeAllListeners();
+  if (typeof voiceClient.removeAllListeners === 'function') {
+    voiceClient.removeAllListeners();
+  }
 }

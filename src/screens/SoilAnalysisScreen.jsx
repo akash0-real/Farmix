@@ -92,7 +92,7 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
       setCapturedImage(asset);
       setAnalysisResult(null);
     } catch (error) {
-      Alert.alert(tt('soilCameraErrorTitle'), error.message);
+      Alert.alert(tt('soilCameraErrorTitle'), error?.message || tt('soilCameraOpenFailed'));
     }
   };
 
@@ -117,7 +117,7 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
       setCapturedImage(asset);
       setAnalysisResult(null);
     } catch (error) {
-      Alert.alert(tt('soilGalleryErrorTitle'), error.message);
+      Alert.alert(tt('soilGalleryErrorTitle'), error?.message || tt('soilGalleryOpenFailed'));
     }
   };
 
@@ -155,7 +155,7 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
       setTimeout(() => Tts.speak(speech), 500);
 
     } catch (error) {
-      Alert.alert(tt('soilAnalysisFailedTitle'), error.message);
+      Alert.alert(tt('soilAnalysisFailedTitle'), error?.message || tt('saveFailed'));
     } finally {
       setIsAnalyzing(false);
     }

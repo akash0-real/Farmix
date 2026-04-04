@@ -177,11 +177,11 @@ export default function LoginScreen({
   const showMicPermissionSettingsPrompt = () => {
     Alert.alert(
       t(selectedLanguage, 'voiceInputFailedTitle'),
-      'Microphone access is blocked. Please enable Microphone permission in App Settings.',
+      t(selectedLanguage, 'micPermissionBlocked'),
       [
-        { text: t(selectedLanguage, 'cancel') || 'Cancel', style: 'cancel' },
+        { text: t(selectedLanguage, 'cancel'), style: 'cancel' },
         {
-          text: 'Open Settings',
+          text: t(selectedLanguage, 'openSettings'),
           onPress: () => {
             Linking.openSettings();
           },
@@ -250,7 +250,7 @@ export default function LoginScreen({
       if (message.includes('VOICE_NATIVE_MISSING') || message.includes('VOICE_ENGINE_UNAVAILABLE')) {
         Alert.alert(
           t(selectedLanguage, 'voiceInputFailedTitle'),
-          'Voice input is not available in this build yet. Please reinstall/rebuild the app and try again.',
+          t(selectedLanguage, 'voiceBuildNotAvailable'),
         );
         return;
       }

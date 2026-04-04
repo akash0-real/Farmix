@@ -275,6 +275,45 @@ export async function translateAlerts(alerts, targetLanguage) {
 }
 
 /**
+ * Translate government scheme content
+ */
+export async function translateGovtSchemes(schemes, targetLanguage) {
+  if (!schemes?.length || targetLanguage === 'English') {
+    return schemes;
+  }
+
+  const allTexts = [];
+  schemes.forEach(scheme => {
+    if (scheme.name) allTexts.push(scheme.name);
+    if (scheme.fullName) allTexts.push(scheme.fullName);
+    if (scheme.benefit) allTexts.push(scheme.benefit);
+    (scheme.eligibility || []).forEach(item => {
+      if (item) allTexts.push(item);
+    });
+    (scheme.documents || []).forEach(item => {
+      if (item) allTexts.push(item);
+    });
+  });
+
+  const uniqueTexts = [...new Set(allTexts)];
+  const translated = await translateBatch(uniqueTexts, targetLanguage);
+  const translationMap = new Map();
+
+  uniqueTexts.forEach((text, i) => {
+    translationMap.set(text, translated[i] || text);
+  });
+
+  return schemes.map(scheme => ({
+    ...scheme,
+    name: translationMap.get(scheme.name) || scheme.name,
+    fullName: translationMap.get(scheme.fullName) || scheme.fullName,
+    benefit: translationMap.get(scheme.benefit) || scheme.benefit,
+    eligibility: (scheme.eligibility || []).map(item => translationMap.get(item) || item),
+    documents: (scheme.documents || []).map(item => translationMap.get(item) || item),
+  }));
+}
+
+/**
  * Translate crop doctor result
  */
 export async function translateCropDoctorResult(result, targetLanguage) {

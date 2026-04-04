@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ImageBackground,
   Linking,
@@ -11,10 +11,11 @@ import {
 } from 'react-native';
 import { GOVT_SCHEMES, SCHEME_CATEGORIES } from '../services/govtSchemes';
 import { t } from '../languages/uiText';
+import { translateGovtSchemes } from '../services/translationService';
 
 const farmImage = require('../assests/images/field.jpg');
 
-function SchemeCard({ scheme, selectedLanguage, onApply, onCall }) {
+function SchemeCard({ scheme, selectedLanguage, categoryLabel, onApply, onCall }) {
   const [expanded, setExpanded] = useState(false);
   const category = SCHEME_CATEGORIES[scheme.category] || {};
 
@@ -30,7 +31,7 @@ function SchemeCard({ scheme, selectedLanguage, onApply, onCall }) {
           <Text style={styles.schemeFullName}>{scheme.fullName}</Text>
         </View>
         <View style={[styles.categoryBadge, { backgroundColor: (category.color || '#7eff8a') + '25' }]}>
-          <Text style={[styles.categoryText, { color: category.color }]}>{category.label}</Text>
+          <Text style={[styles.categoryText, { color: category.color }]}>{categoryLabel}</Text>
         </View>
       </View>
 
@@ -80,9 +81,26 @@ function SchemeCard({ scheme, selectedLanguage, onApply, onCall }) {
 export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [translatedSchemes, setTranslatedSchemes] = useState(GOVT_SCHEMES);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const translateContent = async () => {
+      const localized = await translateGovtSchemes(GOVT_SCHEMES, selectedLanguage);
+      if (isMounted) {
+        setTranslatedSchemes(localized);
+      }
+    };
+
+    translateContent();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedLanguage]);
 
   const filteredSchemes = useMemo(() => {
-    let schemes = GOVT_SCHEMES;
+    let schemes = translatedSchemes;
     
     if (selectedCategory) {
       schemes = schemes.filter(s => s.category === selectedCategory);
@@ -98,7 +116,7 @@ export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
     }
     
     return schemes;
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, translatedSchemes]);
 
   const handleApply = async (url) => {
     try {
@@ -117,6 +135,16 @@ export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
   };
 
   const categories = Object.entries(SCHEME_CATEGORIES);
+  const categoryLabelKeyMap = {
+    income: 'schemeCategoryIncome',
+    insurance: 'schemeCategoryInsurance',
+    credit: 'schemeCategoryCredit',
+    advisory: 'schemeCategoryAdvisory',
+    pension: 'schemeCategoryPension',
+    irrigation: 'schemeCategoryIrrigation',
+    market: 'schemeCategoryMarket',
+    infrastructure: 'schemeCategoryInfrastructure',
+  };
 
   return (
     <View style={styles.container}>
@@ -185,7 +213,7 @@ export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
                   styles.categoryChipText,
                   selectedCategory === key && { color }
                 ]}>
-                  {label}
+                  {categoryLabelKeyMap[key] ? t(selectedLanguage, categoryLabelKeyMap[key]) : label}
                 </Text>
               </Pressable>
             ))}
@@ -202,6 +230,11 @@ export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
               key={scheme.id}
               scheme={scheme}
               selectedLanguage={selectedLanguage}
+              categoryLabel={
+                categoryLabelKeyMap[scheme.category]
+                  ? t(selectedLanguage, categoryLabelKeyMap[scheme.category])
+                  : scheme.category
+              }
               onApply={handleApply}
               onCall={handleCall}
             />

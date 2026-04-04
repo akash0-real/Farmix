@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Tts from 'react-native-tts';
 import {
   ActivityIndicator,
@@ -13,13 +13,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import { launchCamera } from 'react-native-image-picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { detectCropDiseaseAI } from '../services/cropDoctorService';
 import { publishDiseaseAlert } from '../services/alertService';
 import { t } from '../languages/uiText';
 import { getTtsCode } from '../languages/languageConfig';
 import { useUser } from '../context/UserContext';
 import { translateCropDoctorResult } from '../services/translationService';
+import { detectDiseaseOffline, initTensorFlow, isOfflineDetectionAvailable } from '../services/tensorflowService';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -66,17 +67,25 @@ function PredictionSection({ predictions, title }) {
   return (
     <View style={styles.sectionCard}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      {predictions.map(prediction => (
+      {predictions.map((prediction, index) => {
+        const label = prediction?.label || prediction?.name || 'Unknown';
+        const confidenceValue =
+          prediction?.confidencePercent ||
+          (typeof prediction?.probability === 'number'
+            ? `${Math.round(prediction.probability * 100)}%`
+            : null) ||
+          'N/A';
+        return (
         <View
-          key={`${prediction.label}-${prediction.confidencePercent}`}
+          key={`${label}-${confidenceValue}-${index}`}
           style={styles.predictionRow}
         >
-          <Text style={styles.predictionLabel}>{prediction.label}</Text>
+          <Text style={styles.predictionLabel}>{label}</Text>
           <Text style={styles.predictionConfidence}>
-            {prediction.confidencePercent}
+            {confidenceValue}
           </Text>
         </View>
-      ))}
+      )})}
     </View>
   );
 }
@@ -86,7 +95,29 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
   const [capturedImage, setCapturedImage] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [offlineReason, setOfflineReason] = useState('');
+  const [tfReady, setTfReady] = useState(false);
   const tt = (key, params = {}) => t(selectedLanguage, key, params);
+
+  // Initialize TensorFlow on mount
+  useEffect(() => {
+    let isMounted = true;
+    initTensorFlow()
+      .then(ready => {
+        if (isMounted) {
+          setTfReady(Boolean(ready));
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setTfReady(false);
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleCapture = async () => {
     try {
@@ -128,6 +159,31 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
     }
   };
 
+  const handlePickFromGallery = async () => {
+    try {
+      const response = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.8,
+        includeBase64: true,
+      });
+
+      if (response.didCancel) return;
+      if (response.errorCode) {
+        throw new Error(response.errorMessage || tt('cropDoctorGalleryFailed'));
+      }
+
+      const asset = response.assets?.[0];
+      if (!asset?.uri || !asset?.base64) {
+        throw new Error(tt('cropDoctorImageIncomplete'));
+      }
+
+      setCapturedImage(asset);
+      setScanResult(null);
+    } catch (error) {
+      Alert.alert(tt('cropDoctorGalleryErrorTitle'), error.message);
+    }
+  };
+
   const handleAnalyze = async () => {
     if (!capturedImage?.base64) {
       Alert.alert(
@@ -139,54 +195,87 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
 
     setScanResult(null);
     setIsScanning(true);
+    setIsOfflineMode(false);
+    setOfflineReason('');
+    let usedOfflineMode = false;
+
+    let result;
+    let communityAlert = null;
 
     try {
-      const result = await detectCropDiseaseAI({
+      // Try online Gemini API first
+      result = await detectCropDiseaseAI({
         base64Data: capturedImage.base64,
         mimeType: capturedImage.type || 'image/jpeg',
       });
 
       // Translate result if not English
-      const translatedResult = await translateCropDoctorResult(result, selectedLanguage);
+      result = await translateCropDoctorResult(result, selectedLanguage);
 
-      const communityAlert = publishDiseaseAlert({
+      communityAlert = publishDiseaseAlert({
         diseaseName: result.diseaseName,
         crop: result.crop,
         severity: result.severity,
         locationName: user.district || user.state || t(selectedLanguage, 'yourArea'),
       });
+    } catch (onlineError) {
+      // Online failed - try TensorFlow offline detection
+      const onlineMessage = onlineError?.message || tt('cropDoctorScanFailedGeneric');
+      setOfflineReason(onlineMessage);
+      console.log('Online detection failed, trying offline:', onlineMessage);
+      
+      if (tfReady || isOfflineDetectionAvailable()) {
+        try {
+          result = await detectDiseaseOffline({
+            base64Data: capturedImage.base64,
+            language: selectedLanguage,
+          });
+          usedOfflineMode = true;
+          setIsOfflineMode(true);
+        } catch (offlineError) {
+          setIsScanning(false);
+          Alert.alert(tt('cropDoctorScanFailedTitle'), offlineError?.message || tt('cropDoctorScanFailedGeneric'));
+          return;
+        }
+      } else {
+        setIsScanning(false);
+        Alert.alert(tt('cropDoctorScanFailedTitle'), onlineMessage);
+        return;
+      }
+    }
 
-      setScanResult(translatedResult);
+    setScanResult(result);
 
-      // ── Speak the result ──
-      const ttsCode = getTtsCode(selectedLanguage);
-      Tts.setDefaultLanguage(ttsCode);
+    // ── Speak the result ──
+    const ttsCode = getTtsCode(selectedLanguage);
+    Tts.setDefaultLanguage(ttsCode);
 
-      const severityWord =
-        translatedResult.severity === 'High'
-          ? tt('cropDoctorSeverityHigh')
-          : translatedResult.severity === 'Moderate'
-          ? tt('cropDoctorSeverityModerate')
-          : tt('cropDoctorSeverityLow');
+    const severityWord =
+      result.severity === 'High'
+        ? tt('cropDoctorSeverityHigh')
+        : result.severity === 'Moderate'
+        ? tt('cropDoctorSeverityModerate')
+        : tt('cropDoctorSeverityLow');
 
-      const speech = [
-        `${tt('cropDoctorSpeechDiseaseDetected')}: ${translatedResult.diseaseName}.`,
-        `${tt('cropDoctorSpeechCrop')}: ${translatedResult.crop}.`,
-        `${tt('cropDoctorSpeechSeverity')}: ${severityWord}.`,
-        `${tt('cropDoctorSpeechConfidence')}: ${translatedResult.confidence}.`,
-        `${translatedResult.summary}`,
-        tt('cropDoctorSpeechCommunityAlert', { radiusKm: communityAlert.radiusKm }),
-      ].join(' ');
+    const speech = [
+      `${tt('cropDoctorSpeechDiseaseDetected')}: ${result.diseaseName || result.disease}.`,
+      `${tt('cropDoctorSpeechCrop')}: ${result.crop}.`,
+      `${tt('cropDoctorSpeechSeverity')}: ${severityWord}.`,
+      `${tt('cropDoctorSpeechConfidence')}: ${result.confidence}.`,
+      result.summary || '',
+      communityAlert ? tt('cropDoctorSpeechCommunityAlert', { radiusKm: communityAlert.radiusKm }) : '',
+    ].filter(Boolean).join(' ');
 
-      Tts.stop();
-      setTimeout(() => Tts.speak(speech), 500);
+    Tts.stop();
+    setTimeout(() => Tts.speak(speech), 500);
 
+    if (!usedOfflineMode && communityAlert) {
       Alert.alert(
         tt('cropDoctorAnalysisCompleteTitle'),
         tt('cropDoctorAnalysisCompleteMessage', {
-          disease: result.diseaseName,
+          disease: result.diseaseName || result.disease,
           severity: result.severity,
-          radiusKm: communityAlert.radiusKm,
+          radiusKm: communityAlert?.radiusKm ?? 0,
         }),
         [
           {
@@ -197,7 +286,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
             text: tt('alertNearbyYes'),
             onPress: () => {
               publishDiseaseAlert({
-                diseaseName: result.diseaseName,
+                diseaseName: result.diseaseName || result.disease,
                 crop: result.crop,
                 severity: result.severity,
                 locationName: user.district || user.state || t(selectedLanguage, 'yourArea'),
@@ -209,46 +298,22 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
           },
         ],
       );
-    } catch (error) {
-      const message = error?.message || tt('cropDoctorScanFailedGeneric');
-
-      if (isQuotaOrRateLimitError(message)) {
-        const retrySeconds = extractRetrySeconds(message);
-        setScanResult(null);
-
-        Tts.stop();
-        setTimeout(() => {
-          Tts.speak(
-            retrySeconds
-              ? tt('cropDoctorAiBusyRetrySeconds', { seconds: retrySeconds })
-              : tt('cropDoctorAiBusyRetryMinute'),
-          );
-        }, 400);
-
-        Alert.alert(
-          tt('cropDoctorAiBusyTitle'),
-          retrySeconds
-            ? tt('cropDoctorAiBusyRetrySeconds', { seconds: retrySeconds })
-            : tt('cropDoctorAiBusyRetryMinute'),
-        );
-      } else {
-        Alert.alert(tt('cropDoctorScanFailedTitle'), message);
-      }
-    } finally {
-      setIsScanning(false);
     }
+
+    setIsScanning(false);
   };
 
   const handleListenTreatment = () => {
     if (!scanResult) return;
     const treatment = scanResult.treatment?.join('. ') || '';
     Tts.stop();
-    Tts.speak(`${tt('cropDoctorListenPrefix')} ${scanResult.diseaseName}. ${treatment}`);
+    Tts.speak(`${tt('cropDoctorListenPrefix')} ${scanResult.diseaseName || scanResult.disease}. ${treatment}`);
   };
 
   const handleReset = () => {
     setCapturedImage(null);
     setScanResult(null);
+    setIsOfflineMode(false);
     Tts.stop();
   };
 
@@ -297,21 +362,25 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
                 {capturedImage ? `📷 ${tt('cropDoctorRetake')}` : `📷 ${tt('cropDoctorOpenCamera')}`}
               </Text>
             </Pressable>
-            <Pressable
-              style={[
-                styles.secondaryButton,
-                (!capturedImage || isScanning) && styles.buttonDisabled,
-              ]}
-              onPress={handleAnalyze}
-              disabled={!capturedImage || isScanning}
-            >
-              {isScanning ? (
-                <ActivityIndicator color="#7eff8a" />
-              ) : (
-                <Text style={styles.secondaryButtonText}>🔍 {tt('cropDoctorAnalyze')}</Text>
-              )}
+            <Pressable style={styles.galleryButton} onPress={handlePickFromGallery}>
+              <Text style={styles.galleryButtonText}>🖼️ {tt('cropDoctorGallery')}</Text>
             </Pressable>
           </View>
+
+          <Pressable
+            style={[
+              styles.analyzeButton,
+              (!capturedImage || isScanning) && styles.buttonDisabled,
+            ]}
+            onPress={handleAnalyze}
+            disabled={!capturedImage || isScanning}
+          >
+            {isScanning ? (
+              <ActivityIndicator color="#7eff8a" />
+            ) : (
+              <Text style={styles.analyzeButtonText}>🔍 {tt('cropDoctorAnalyze')}</Text>
+            )}
+          </Pressable>
 
           {capturedImage && (
             <Pressable style={styles.resetLink} onPress={handleReset}>
@@ -336,6 +405,22 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
 
           {capturedImage && scanResult && (
             <>
+              {/* Offline Mode Banner */}
+              {isOfflineMode && (
+                <View style={styles.offlineBanner}>
+                  <Text style={styles.offlineBannerIcon}>📴</Text>
+                  <View style={styles.offlineBannerContent}>
+                    <Text style={styles.offlineBannerTitle}>{tt('offlineAnalysis')}</Text>
+                    <Text style={styles.offlineBannerText}>{tt('offlineAnalysisHint')}</Text>
+                    {offlineReason ? (
+                      <Text style={styles.offlineReasonText}>
+                        {tt('errorTitle')}: {offlineReason}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              )}
+
               <View
                 style={[
                   styles.severityBanner,
@@ -367,7 +452,7 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
 
               <View style={styles.resultCard}>
                 <Text style={styles.resultLabel}>{tt('cropDoctorLikelyDiagnosis')}</Text>
-                <Text style={styles.resultTitle}>{scanResult.diseaseName}</Text>
+                <Text style={styles.resultTitle}>{scanResult.diseaseName || scanResult.disease}</Text>
                 <Text style={styles.cropText}>
                   {tt('cropDoctorIdentifiedIn')}: {scanResult.crop}
                 </Text>
@@ -552,6 +637,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
+  galleryButton: {
+    flex: 1,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,217,102,0.15)',
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,217,102,0.4)',
+  },
+  galleryButtonText: {
+    color: '#ffd966',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  analyzeButton: {
+    borderRadius: 16,
+    backgroundColor: 'rgba(126,255,138,0.15)',
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(126,255,138,0.4)',
+    marginBottom: 12,
+  },
+  analyzeButtonText: {
+    color: '#7eff8a',
+    fontSize: 16,
+    fontWeight: '800',
+  },
   secondaryButton: {
     flex: 1,
     borderRadius: 16,
@@ -596,6 +709,41 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 21,
     color: 'rgba(255, 233, 166, 0.95)',
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,217,102,0.15)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,217,102,0.3)',
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  offlineBannerIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  offlineBannerContent: {
+    flex: 1,
+  },
+  offlineBannerTitle: {
+    color: '#ffd966',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  offlineBannerText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  offlineReasonText: {
+    color: 'rgba(255, 217, 102, 0.95)',
+    fontSize: 10,
+    marginTop: 6,
+    lineHeight: 14,
+    fontWeight: '700',
   },
   severityBanner: {
     borderRadius: 12,

@@ -23,6 +23,12 @@ import {
   startVoiceSession,
   stopVoiceSession,
 } from '../services/voiceAssistantService';
+import {
+  formatBadge,
+  getCurrentBadge,
+  getNextBadge,
+  getRewards,
+} from '../services/rewardsService';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -31,6 +37,8 @@ export default function HomeScreen({
   onCropDoctor,
   onMandi,
   onAlerts,
+  onCommunityLessons,
+  onBuyerConnect,
   onSoilAnalysis,
   onGovtSchemes,
   onLogout,
@@ -42,6 +50,7 @@ export default function HomeScreen({
   const [isCommandListening, setIsCommandListening] = useState(false);
   const [lastVoiceText, setLastVoiceText] = useState('');
   const [lastVoiceActionKey, setLastVoiceActionKey] = useState('');
+  const [rewards, setRewards] = useState(null);
   const lastSpokenAlertIdRef = useRef(null);
 
   useEffect(() => {
@@ -52,6 +61,20 @@ export default function HomeScreen({
       unsubscribe();
       destroyVoiceSession();
       Tts.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadRewards = async () => {
+      const data = await getRewards();
+      if (isMounted) {
+        setRewards(data);
+      }
+    };
+    loadRewards();
+    return () => {
+      isMounted = false;
     };
   }, []);
 
@@ -114,7 +137,7 @@ export default function HomeScreen({
     {
       label: t(selectedLanguage, 'farmType'),
       value: user.farmType === 'irrigated' ? '💧' : user.farmType === 'rainfed' ? '🌧️' : '🔄',
-      unit: user.farmType ? user.farmType.charAt(0).toUpperCase() + user.farmType.slice(1) : 'N/A',
+      unit: user.farmType ? t(selectedLanguage, user.farmType) : t(selectedLanguage, 'notAvailable'),
       icon: '🏡',
     },
     {
@@ -156,6 +179,20 @@ export default function HomeScreen({
       color: '#4dabf7',
     },
     {
+      icon: '🛒',
+      title: t(selectedLanguage, 'sellerConnection'),
+      subtitle: t(selectedLanguage, 'sellerConnectionSubtitle'),
+      action: 'buyerConnect',
+      color: '#ffb26b',
+    },
+    {
+      icon: '🤝',
+      title: t(selectedLanguage, 'communityLessons'),
+      subtitle: t(selectedLanguage, 'communityLessonsSubtitle'),
+      action: 'communityLessons',
+      color: '#9bd8ff',
+    },
+    {
       icon: '⚠️',
       title: t(selectedLanguage, 'alertCenter'),
       subtitle: t(selectedLanguage, 'communityWarnings'),
@@ -169,6 +206,8 @@ export default function HomeScreen({
     else if (action === 'soilAnalysis') onSoilAnalysis();
     else if (action === 'mandi') onMandi();
     else if (action === 'govtSchemes') onGovtSchemes();
+    else if (action === 'buyerConnect') onBuyerConnect();
+    else if (action === 'communityLessons') onCommunityLessons();
     else if (action === 'alerts') onAlerts();
   };
 
@@ -181,10 +220,13 @@ export default function HomeScreen({
 
   const voiceStatus =
     latestAlert?.severity === 'high'
-      ? 'Red'
+      ? t(selectedLanguage, 'statusRed')
       : latestAlert?.severity === 'moderate'
-      ? 'Yellow'
-      : 'Green';
+      ? t(selectedLanguage, 'statusYellow')
+      : t(selectedLanguage, 'statusGreen');
+
+  const currentBadge = rewards ? getCurrentBadge(Number(rewards.points || 0)) : null;
+  const nextBadge = rewards ? getNextBadge(Number(rewards.points || 0)) : null;
 
   const isDistrictWatch = Boolean(
     latestAlert &&
@@ -269,6 +311,22 @@ export default function HomeScreen({
             onMandi?.();
             return;
           }
+          if (command === 'buyerConnect') {
+            setLastVoiceActionKey('voiceActionBuyer');
+            Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
+            Tts.stop();
+            Tts.speak(t(selectedLanguage, 'voiceActionBuyer'));
+            onBuyerConnect?.();
+            return;
+          }
+          if (command === 'communityLessons') {
+            setLastVoiceActionKey('voiceActionLessons');
+            Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
+            Tts.stop();
+            Tts.speak(t(selectedLanguage, 'voiceActionLessons'));
+            onCommunityLessons?.();
+            return;
+          }
           if (command === 'alerts') {
             setLastVoiceActionKey('voiceActionAlerts');
             Tts.setDefaultLanguage(getTtsCode(selectedLanguage));
@@ -310,7 +368,7 @@ export default function HomeScreen({
       if (message.includes('VOICE_NATIVE_MISSING') || message.includes('VOICE_ENGINE_UNAVAILABLE')) {
         Alert.alert(
           t(selectedLanguage, 'voiceInputFailedTitle'),
-          'Voice input is not available in this build yet. Please reinstall/rebuild the app and try again.',
+          t(selectedLanguage, 'voiceBuildNotAvailable'),
         );
         return;
       }
@@ -320,7 +378,7 @@ export default function HomeScreen({
   };
 
   const showComingSoon = () => {
-    Alert.alert('Coming Soon', 'This feature will be available in the next update.');
+    Alert.alert(t(selectedLanguage, 'comingSoonTitle'), t(selectedLanguage, 'comingSoonMessage'));
   };
 
   return (
@@ -345,7 +403,7 @@ export default function HomeScreen({
               </View>
               <View>
                 <Text style={styles.greeting}>{getGreeting()}</Text>
-                <Text style={styles.headerName}>{user.name || 'Farmer'}</Text>
+                <Text style={styles.headerName}>{user.name || t(selectedLanguage, 'farmerDefaultName')}</Text>
                 <View style={styles.premiumBadge}>
                   <View style={styles.premiumIcon}>
                     <Text style={styles.premiumStar}>⭐</Text>
@@ -417,6 +475,30 @@ export default function HomeScreen({
               <Text style={styles.weatherLoading}>{t(selectedLanguage, 'weatherUnavailable')}</Text>
             )}
           </View>
+
+          {rewards ? (
+            <View style={styles.impactCard}>
+              <View style={styles.impactRow}>
+                <Text style={styles.impactTitle}>🏅 {t(selectedLanguage, 'myImpact')}</Text>
+                <Text style={styles.impactBadge}>
+                  {currentBadge ? formatBadge(currentBadge, selectedLanguage) : ''}
+                </Text>
+              </View>
+              <Text style={styles.impactPoints}>
+                {t(selectedLanguage, 'totalPoints')}: {rewards.points || 0}
+              </Text>
+              <Text style={styles.impactStats}>
+                {t(selectedLanguage, 'lessonsPosted')}: {rewards.lessonsPosted || 0} | {t(selectedLanguage, 'helpfulReceived')}: {rewards.helpfulReceived || 0} | {t(selectedLanguage, 'verifiedOutcomes')}: {rewards.verifiedOutcomes || 0}
+              </Text>
+              {nextBadge ? (
+                <Text style={styles.impactHint}>
+                  {t(selectedLanguage, 'nextBadgeIn', { points: nextBadge.pointsNeeded })}
+                </Text>
+              ) : (
+                <Text style={styles.impactHint}>{t(selectedLanguage, 'maxBadgeReached')}</Text>
+              )}
+            </View>
+          ) : null}
 
           {isDistrictWatch ? (
             <View style={styles.watchCard}>
@@ -523,6 +605,18 @@ export default function HomeScreen({
                   <Text style={styles.quickIcon}>📊</Text>
                 </View>
                 <Text style={styles.quickLabel}>{t(selectedLanguage, 'checkPrices')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickCard} onPress={onBuyerConnect}>
+                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(255,178,107,0.18)' }]}>
+                  <Text style={styles.quickIcon}>🛒</Text>
+                </View>
+                <Text style={styles.quickLabel}>{t(selectedLanguage, 'connectBuyerQuick')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickCard} onPress={onCommunityLessons}>
+                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(155,216,255,0.18)' }]}>
+                  <Text style={styles.quickIcon}>🤝</Text>
+                </View>
+                <Text style={styles.quickLabel}>{t(selectedLanguage, 'shareLessonQuick')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -839,6 +933,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 8,
+  },
+  impactCard: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,217,102,0.35)',
+    backgroundColor: 'rgba(255,217,102,0.12)',
+    padding: 12,
+  },
+  impactRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
+  },
+  impactTitle: {
+    color: '#ffe8a6',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  impactBadge: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  impactPoints: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '900',
+    marginBottom: 3,
+  },
+  impactStats: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '700',
+  },
+  impactHint: {
+    marginTop: 6,
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   watchCard: {
