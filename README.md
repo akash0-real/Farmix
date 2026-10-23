@@ -1,4 +1,4 @@
-# Farmix
+# Farmix 
 
 Farmix is a voice-first mobile assistant for small and marginal farmers in India. It helps farmers detect crop disease early, trigger community alerts, and take faster on-field decisions with minimal typing.
 
