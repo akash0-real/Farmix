@@ -1,4 +1,4 @@
-# Farmix
+# Farmix 
 
 Farmix is a voice-first, multilingual mobile assistant for Indian farmers. It supports the full loop from crop issue detection to community knowledge sharing and buyer-side income decisions.
 
