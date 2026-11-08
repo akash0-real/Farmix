@@ -32,6 +32,7 @@ import {
   startVoiceSession,
   stopVoiceSession,
 } from '../services/voiceAssistantService';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -58,7 +59,6 @@ export default function LoginScreen({
     Tts.speak(message);
   };
 
-  // ── Speak welcome on mount ──
   useEffect(() => {
     const ttsCode = getTtsCode(selectedLanguage);
     const message =
@@ -74,7 +74,6 @@ export default function LoginScreen({
     };
   }, []);
 
-  // ── OTP countdown timer ──
   useEffect(() => {
     if (step === 'otp') {
       setTimer(30);
@@ -91,7 +90,6 @@ export default function LoginScreen({
     return () => clearInterval(timerRef.current);
   }, [step]);
 
-  // ── Send OTP using Firebase ──
   const sendOtp = async () => {
     if (phoneNumber.length < 10) {
       Alert.alert(
@@ -119,7 +117,6 @@ export default function LoginScreen({
     }
   };
 
-  // ── Verify OTP using Firebase ──
   const verifyOtp = async () => {
     if (otp.length !== 6) {
       Alert.alert(t(selectedLanguage, 'invalidOtpTitle'), t(selectedLanguage, 'invalidOtpMessage'));
@@ -147,7 +144,6 @@ export default function LoginScreen({
     }
   };
 
-  // ── Resend OTP ──
   const resendOtp = () => {
     if (timer > 0) return;
     setOtp('');
@@ -172,22 +168,6 @@ export default function LoginScreen({
   const handleMoreLanguageSelect = label => {
     onSelectLanguage(label);
     setShowMoreLanguages(false);
-  };
-
-  const showMicPermissionSettingsPrompt = () => {
-    Alert.alert(
-      t(selectedLanguage, 'voiceInputFailedTitle'),
-      t(selectedLanguage, 'micPermissionBlocked'),
-      [
-        { text: t(selectedLanguage, 'cancel'), style: 'cancel' },
-        {
-          text: t(selectedLanguage, 'openSettings'),
-          onPress: () => {
-            Linking.openSettings();
-          },
-        },
-      ],
-    );
   };
 
   const handleVoicePhoneInput = async () => {
@@ -219,25 +199,11 @@ export default function LoginScreen({
             );
           }
         },
-        onError: (event) => {
-          const rawError =
-            event?.error?.message ||
-            event?.error ||
-            event?.message ||
-            '';
-          const errorText = String(rawError).trim();
-          if (
-            errorText.includes('MIC_PERMISSION_DENIED') ||
-            errorText.toLowerCase().includes('permission')
-          ) {
-            showMicPermissionSettingsPrompt();
-            return;
-          }
+        onError: () => {
+          setIsListening(false);
           Alert.alert(
             t(selectedLanguage, 'voiceInputFailedTitle'),
-            errorText
-              ? `${t(selectedLanguage, 'voiceInputFailedMessage')}\n\n${errorText}`
-              : t(selectedLanguage, 'voiceInputFailedMessage'),
+            t(selectedLanguage, 'voiceInputFailedMessage'),
           );
         },
         onEnd: () => {
@@ -247,15 +213,18 @@ export default function LoginScreen({
     } catch (error) {
       setIsListening(false);
       const message = error?.message ? String(error.message) : '';
-      if (message.includes('VOICE_NATIVE_MISSING') || message.includes('VOICE_ENGINE_UNAVAILABLE')) {
+      if (message.includes('VOICE_PERMISSION_BLOCKED') || message.includes('RECORD_AUDIO')) {
         Alert.alert(
           t(selectedLanguage, 'voiceInputFailedTitle'),
-          t(selectedLanguage, 'voiceBuildNotAvailable'),
+          t(selectedLanguage, 'micPermissionBlocked'),
+          [
+            { text: t(selectedLanguage, 'cancel'), style: 'cancel' },
+            {
+              text: t(selectedLanguage, 'openSettings'),
+              onPress: () => Linking.openSettings(),
+            },
+          ],
         );
-        return;
-      }
-      if (message.includes('MIC_PERMISSION_DENIED')) {
-        showMicPermissionSettingsPrompt();
         return;
       }
       Alert.alert(
@@ -270,28 +239,22 @@ export default function LoginScreen({
   return (
     <View style={styles.container}>
       <ImageBackground source={farmImage} style={styles.hero} resizeMode="cover">
-        {/* Overlays */}
         <View style={styles.overlayTop} />
         <View style={styles.overlayBottom} />
-        <View style={styles.overlayDepth} />
 
         {/* Header */}
         <View style={styles.headerRow}>
           <View style={styles.brandRow}>
             <View style={styles.logoBox}>
-              <Text style={styles.logoText}>F</Text>
+              <Text style={styles.logoGlyph}>🌿</Text>
             </View>
             <Text style={styles.brandText}>Farmix</Text>
           </View>
-          <View style={styles.helpBadge}>
-            <Text style={styles.helpText}>?</Text>
-          </View>
-        </View>
 
-        {/* Floating Tag */}
-        <View style={styles.floatingTag}>
-          <Text style={styles.floatingTagIcon}>🔐</Text>
-          <Text style={styles.floatingTagText}>{t(selectedLanguage, 'secureLogin')}</Text>
+          <View style={styles.floatingTag}>
+            <Text style={styles.floatingTagIcon}>🔐</Text>
+            <Text style={styles.floatingTagText}>{t(selectedLanguage, 'secureLogin')}</Text>
+          </View>
         </View>
 
         <ScrollView
@@ -299,14 +262,13 @@ export default function LoginScreen({
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Glass Card */}
+          {/* Glass Sheet */}
           <View style={styles.glassSheet}>
             <View style={styles.glassInner}>
               <View style={styles.handle} />
 
               {step === 'phone' ? (
                 <>
-                  {/* Voice Welcome */}
                   <Text style={styles.voiceTitle}>
                     {GREETING_MESSAGES[selectedLanguage] || GREETING_MESSAGES.English} 👋
                   </Text>
@@ -314,7 +276,7 @@ export default function LoginScreen({
                     {t(selectedLanguage, 'enterPhoneToStart')}
                   </Text>
 
-                  {/* Mic Button */}
+                  {/* Concentric Voice Mic Button */}
                   <Pressable
                     style={[
                       styles.micOuter,
@@ -323,7 +285,7 @@ export default function LoginScreen({
                     onPress={handleVoicePhoneInput}
                     onLongPress={speakWelcome}
                   >
-                    <View style={styles.micInner}>
+                    <View style={[styles.micInner, isListening && styles.micInnerListening]}>
                       <Text style={styles.micEmoji}>{isListening ? '🎙️' : '🎤'}</Text>
                     </View>
                   </Pressable>
@@ -333,7 +295,7 @@ export default function LoginScreen({
                       : t(selectedLanguage, 'tapMicHint')}
                   </Text>
 
-                  {/* Phone Input */}
+                  {/* Phone Input Row */}
                   <View style={styles.phoneInputRow}>
                     <View style={styles.countryCode}>
                       <Text style={styles.countryCodeText}>🇮🇳 +91</Text>
@@ -345,24 +307,28 @@ export default function LoginScreen({
                       maxLength={10}
                       value={phoneNumber}
                       onChangeText={setPhoneNumber}
-                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      placeholderTextColor={colors.faint}
                     />
                   </View>
 
                   {/* Send OTP Button */}
                   <Pressable
-                    style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                    style={({ pressed }) => [
+                      styles.primaryButton,
+                      loading && styles.buttonDisabled,
+                      pressed && !loading && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+                    ]}
                     onPress={sendOtp}
                     disabled={loading || isListening}
                   >
                     {loading ? (
-                      <ActivityIndicator color="white" />
+                      <ActivityIndicator color="#ffffff" />
                     ) : (
-                      <Text style={styles.primaryButtonText}>{t(selectedLanguage, 'sendOtp')}</Text>
+                      <Text style={styles.primaryButtonText}>{t(selectedLanguage, 'sendOtp')} →</Text>
                     )}
                   </Pressable>
 
-                  {/* Language Select */}
+                  {/* Language Selection */}
                   <Text style={styles.sectionLabel}>{t(selectedLanguage, 'selectLanguage')}</Text>
                   <View style={styles.languageGrid}>
                     {LANGUAGE_OPTIONS.map(({ label, nativeLabel }) => {
@@ -407,7 +373,7 @@ export default function LoginScreen({
                     maxLength={6}
                     value={otp}
                     onChangeText={setOtp}
-                    placeholderTextColor="rgba(255,255,255,0.5)"
+                    placeholderTextColor={colors.faint}
                     textAlign="center"
                     letterSpacing={12}
                   />
@@ -422,18 +388,22 @@ export default function LoginScreen({
 
                   {/* Verify Button */}
                   <Pressable
-                    style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                    style={({ pressed }) => [
+                      styles.primaryButton,
+                      loading && styles.buttonDisabled,
+                      pressed && !loading && { opacity: 0.9 },
+                    ]}
                     onPress={verifyOtp}
                     disabled={loading}
                   >
                     {loading ? (
-                      <ActivityIndicator color="white" />
+                      <ActivityIndicator color="#ffffff" />
                     ) : (
-                      <Text style={styles.primaryButtonText}>{t(selectedLanguage, 'verifyOtp')}</Text>
+                      <Text style={styles.primaryButtonText}>{t(selectedLanguage, 'verifyOtp')} ✓</Text>
                     )}
                   </Pressable>
 
-                  {/* Timer + Resend */}
+                  {/* Timer & Resend */}
                   <View style={styles.resendRow}>
                     <Text style={styles.timerText}>
                       {timer > 0 ? t(selectedLanguage, 'resendIn', { seconds: timer }) : ''}
@@ -447,12 +417,11 @@ export default function LoginScreen({
                     </Pressable>
                   </View>
 
-                  {/* Change Number */}
                   <Pressable
                     onPress={() => setStep('phone')}
                     style={styles.changeNumber}
                   >
-                    <Text style={styles.changeNumberText}>{t(selectedLanguage, 'changeNumber')}</Text>
+                    <Text style={styles.changeNumberText}>← {t(selectedLanguage, 'changeNumber')}</Text>
                   </Pressable>
                 </>
               )}
@@ -513,33 +482,30 @@ export default function LoginScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.ground,
   },
   hero: {
     flex: 1,
-    backgroundColor: '#0d3320',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 20, 10, 0.2)',
+    backgroundColor: 'rgba(5, 14, 8, 0.45)',
   },
   overlayBottom: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 25, 12, 0.16)',
-  },
-  overlayDepth: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '60%',
-    backgroundColor: 'rgba(5, 25, 12, 0.44)',
+    height: '65%',
+    backgroundColor: 'rgba(5, 18, 9, 0.75)',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 18,
     zIndex: 10,
   },
   brandRow: {
@@ -548,403 +514,400 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   logoBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#2d8a3f',
+    width: 38,
+    height: 38,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoText: {
-    color: '#fff',
+  logoGlyph: {
     fontSize: 18,
-    fontWeight: '900',
   },
   brandText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 22,
     fontWeight: '900',
-  },
-  helpBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  helpText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   floatingTag: {
-    position: 'absolute',
-    top: 68,
-    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 20,
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.full,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    gap: 5,
+    gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    zIndex: 10,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
-  floatingTagIcon: { fontSize: 12 },
+  floatingTagIcon: { fontSize: 11 },
   floatingTagText: {
-    color: '#fff',
+    color: colors.inkSecondary,
     fontSize: 11,
     fontWeight: '700',
   },
   scrollView: {
     flex: 1,
-    marginTop: 40,
+    marginTop: 20,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'flex-end',
   },
   glassSheet: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: radii.xl + 6,
+    borderTopRightRadius: radii.xl + 6,
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
     borderBottomWidth: 0,
+    backgroundColor: 'rgba(10, 24, 15, 0.94)',
   },
   glassInner: {
-    backgroundColor: 'rgba(8, 28, 15, 0.78)',
-    paddingHorizontal: 22,
+    paddingHorizontal: spacing.xxl,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: spacing.xxl,
   },
   handle: {
-    width: 40,
+    width: 36,
     height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   voiceTitle: {
-    color: '#fff',
+    color: '#ffffff',
     textAlign: 'center',
-    fontSize: 29,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 32,
     fontWeight: '900',
-    marginTop: 8,
-    marginBottom: 10,
+    marginTop: 4,
+    marginBottom: 6,
+    letterSpacing: -0.4,
   },
   voiceSubtitle: {
-    color: 'rgba(255,255,255,0.65)',
+    color: colors.muted,
     textAlign: 'center',
-    fontSize: 16,
-    marginBottom: 18,
+    fontSize: 14,
+    marginBottom: spacing.lg,
     fontWeight: '500',
   },
+
+  // Concentric Mic Button
   micOuter: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'transparent',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(52, 211, 153, 0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(126, 255, 138, 0.28)',
+    borderColor: 'rgba(52, 211, 153, 0.25)',
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   micOuterListening: {
-    transform: [{ scale: 1.04 }],
+    borderColor: colors.coral,
+    backgroundColor: 'rgba(248, 113, 113, 0.1)',
   },
   micInner: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#2f8d41',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: '#1b6334',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.15)',
-    shadowColor: '#2f8d41',
-    shadowOpacity: 0.55,
-    shadowRadius: 14,
+    borderWidth: 3,
+    borderColor: 'rgba(52, 211, 153, 0.4)',
+    shadowColor: colors.emerald,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    elevation: 6,
+  },
+  micInnerListening: {
+    backgroundColor: colors.coral,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: colors.coral,
   },
   micEmoji: {
-    fontSize: 42,
+    fontSize: 34,
   },
   micHint: {
     textAlign: 'center',
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-    marginBottom: 20,
+    color: colors.muted,
+    fontSize: 11,
+    marginBottom: spacing.lg,
+    fontWeight: '600',
   },
   stopListeningBtn: {
-    marginTop: 10,
+    marginTop: 8,
     alignSelf: 'center',
-    backgroundColor: 'rgba(255,107,107,0.2)',
+    backgroundColor: 'rgba(248, 113, 113, 0.2)',
     borderWidth: 1,
-    borderColor: 'rgba(255,107,107,0.4)',
-    borderRadius: 10,
-    paddingVertical: 8,
+    borderColor: 'rgba(248, 113, 113, 0.4)',
+    borderRadius: radii.full,
+    paddingVertical: 6,
     paddingHorizontal: 12,
+    marginBottom: 10,
   },
   stopListeningText: {
-    color: '#ffd2d2',
-    fontSize: 12,
+    color: '#ffd0d0',
+    fontSize: 11,
     fontWeight: '700',
   },
+
+  // Phone Input
   phoneInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    marginBottom: 16,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    marginBottom: spacing.md,
     overflow: 'hidden',
   },
   countryCode: {
     paddingHorizontal: 14,
-    paddingVertical: 14,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderRightWidth: 1,
-    borderRightColor: 'rgba(255,255,255,0.15)',
+    borderRightColor: 'rgba(255, 255, 255, 0.1)',
   },
   countryCodeText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#fff',
+    color: '#ffffff',
   },
   phoneInput: {
     flex: 1,
     paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingVertical: 12,
     fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
+    color: '#ffffff',
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   primaryButton: {
-    backgroundColor: '#2f8d41',
-    paddingVertical: 15,
-    borderRadius: 999,
+    backgroundColor: '#1b6334',
+    paddingVertical: 14,
+    borderRadius: radii.full,
     alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#2f8d41',
-    shadowOpacity: 0.55,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(150,255,150,0.25)',
+    borderColor: 'rgba(52, 211, 153, 0.4)',
+    shadowColor: colors.emerald,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    shadowOpacity: 0,
-    elevation: 0,
+    opacity: 0.5,
   },
   primaryButtonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
   sectionLabel: {
-    color: '#7eff8a',
-    fontSize: 12,
-    letterSpacing: 2,
+    color: colors.emerald,
+    fontSize: 11,
+    letterSpacing: 1,
     fontWeight: '800',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
+    textTransform: 'uppercase',
   },
   languageGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 10,
-    marginBottom: 20,
+    rowGap: 8,
+    marginBottom: spacing.md,
   },
   languageButton: {
-    width: '48.2%',
-    borderRadius: 14,
+    width: '48.5%',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingVertical: 12,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: 11,
     alignItems: 'center',
   },
   languageButtonActive: {
-    borderColor: '#7eff8a',
-    backgroundColor: 'rgba(126, 255, 138, 0.15)',
+    borderColor: colors.emerald,
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
   },
   languageButtonText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 15,
+    color: colors.inkSecondary,
+    fontSize: 14,
     fontWeight: '700',
   },
   languageButtonTextActive: {
-    color: '#7eff8a',
+    color: colors.emerald,
   },
+
+  // OTP
   otpTitle: {
-    color: '#fff',
+    color: '#ffffff',
     textAlign: 'center',
-    fontSize: 29,
+    fontSize: 26,
     fontWeight: '900',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 14,
+    marginBottom: 6,
+    letterSpacing: -0.4,
   },
   otpSubtitle: {
-    color: 'rgba(255,255,255,0.65)',
+    color: colors.muted,
     textAlign: 'center',
-    fontSize: 15,
-    marginBottom: 30,
-    fontWeight: '500',
+    fontSize: 14,
+    marginBottom: spacing.xl,
   },
   otpInput: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    paddingVertical: 18,
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#fff',
-    marginBottom: 20,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 16,
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#ffffff',
+    marginBottom: spacing.lg,
   },
   resendRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
     paddingHorizontal: 4,
   },
   timerText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 13,
+    color: colors.muted,
+    fontSize: 12,
   },
   resendText: {
-    color: '#7eff8a',
-    fontSize: 13,
+    color: colors.emerald,
+    fontSize: 12,
     fontWeight: '700',
   },
   resendDisabled: {
-    color: 'rgba(255,255,255,0.3)',
+    color: colors.faint,
   },
   changeNumber: {
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   changeNumberText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
+    color: colors.muted,
+    fontSize: 13,
     fontWeight: '600',
   },
   backButton: {
     alignSelf: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 20,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radii.full,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   backButtonText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 15,
+    color: colors.muted,
+    fontSize: 13,
     fontWeight: '700',
   },
 
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: 'rgba(8, 28, 15, 0.95)',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 22,
+    backgroundColor: '#0c1a11',
+    borderTopLeftRadius: radii.xl + 6,
+    borderTopRightRadius: radii.xl + 6,
+    paddingHorizontal: spacing.xxl,
     paddingTop: 12,
-    paddingBottom: 34,
+    paddingBottom: 32,
     maxHeight: '80%',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.18)',
-    borderBottomWidth: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   modalHandle: {
-    width: 40,
+    width: 36,
     height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   modalTitle: {
-    color: '#fff',
-    fontSize: 24,
+    color: '#ffffff',
+    fontSize: 22,
     fontWeight: '900',
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
+    letterSpacing: -0.3,
   },
   modalSubtitle: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 14,
+    color: colors.muted,
+    fontSize: 13,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   modalScroll: {
-    maxHeight: 300,
+    maxHeight: 280,
   },
   modalLanguageGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 10,
+    rowGap: 8,
   },
   modalLanguageButton: {
-    width: '48.2%',
-    borderRadius: 14,
+    width: '48.5%',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingVertical: 14,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: 12,
     alignItems: 'center',
   },
   modalLanguageButtonActive: {
-    borderColor: '#7eff8a',
-    backgroundColor: 'rgba(126, 255, 138, 0.15)',
+    borderColor: colors.emerald,
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
   },
   modalLanguageNative: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#ffffff',
+    fontSize: 16,
     fontWeight: '700',
     marginBottom: 2,
   },
   modalLanguageLabel: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
+    color: colors.muted,
+    fontSize: 11,
     fontWeight: '600',
   },
   modalCloseButton: {
-    marginTop: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingVertical: 14,
-    borderRadius: 999,
+    marginTop: spacing.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 12,
+    borderRadius: radii.full,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   modalCloseText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 16,
+    color: colors.ink,
+    fontSize: 14,
     fontWeight: '700',
   },
 });

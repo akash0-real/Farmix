@@ -6,7 +6,7 @@ let dataGovBaseUrl = 'https://api.data.gov.in/resource';
 
 try {
   // Keep keys/endpoints in src/config/localSecrets.js (gitignored).
-  // eslint-disable-next-line global-require, import/no-unresolved
+  // eslint-disable-next-line
   const localSecrets = require('../config/localSecrets');
   dataGovApiKey = localSecrets.DATA_GOV_API_KEY || dataGovApiKey;
   mandiResourceId = localSecrets.MANDI_RESOURCE_ID || mandiResourceId;

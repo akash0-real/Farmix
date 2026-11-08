@@ -29,6 +29,7 @@ import {
   getNextBadge,
   getRewards,
 } from '../services/rewardsService';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -118,7 +119,6 @@ export default function HomeScreen({
     };
   }, [user.village, user.district, user.state]);
 
-  // Get greeting based on time of day with translation
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return t(selectedLanguage, 'goodMorning');
@@ -126,97 +126,26 @@ export default function HomeScreen({
     return t(selectedLanguage, 'goodEvening');
   };
 
-  // Dynamic stats based on user data with translations
   const statsData = useMemo(() => [
     {
       label: t(selectedLanguage, 'totalArea'),
       value: user.farmSize || '0',
       unit: t(selectedLanguage, 'acres'),
-      icon: '🌾',
+      glyph: '🌾',
     },
     {
       label: t(selectedLanguage, 'farmType'),
       value: user.farmType === 'irrigated' ? '💧' : user.farmType === 'rainfed' ? '🌧️' : '🔄',
       unit: user.farmType ? t(selectedLanguage, user.farmType) : t(selectedLanguage, 'notAvailable'),
-      icon: '🏡',
+      glyph: '🏡',
     },
     {
       label: t(selectedLanguage, 'crops'),
       value: user.crops?.length || 0,
       unit: t(selectedLanguage, 'types'),
-      icon: '🌱',
+      glyph: '🌱',
     },
   ], [user, selectedLanguage]);
-
-  // Simplified dashboard - only 3 essential features
-  const dashboardItems = useMemo(() => [
-    {
-      icon: '🌿',
-      title: t(selectedLanguage, 'cropDoctor'),
-      subtitle: t(selectedLanguage, 'aiDiseaseDetection'),
-      action: 'cropDoctor',
-      color: '#7eff8a',
-    },
-    {
-      icon: '🌍',
-      title: t(selectedLanguage, 'soilAnalysis'),
-      subtitle: t(selectedLanguage, 'soilAnalysisSubtitle'),
-      action: 'soilAnalysis',
-      color: '#c4a35a',
-    },
-    {
-      icon: '💰',
-      title: t(selectedLanguage, 'mandiPrices'),
-      subtitle: t(selectedLanguage, 'liveMarketRates'),
-      action: 'mandi',
-      color: '#ffd966',
-    },
-    {
-      icon: '🏛️',
-      title: t(selectedLanguage, 'govtSchemes'),
-      subtitle: t(selectedLanguage, 'govtSchemesSubtitle'),
-      action: 'govtSchemes',
-      color: '#4dabf7',
-    },
-    {
-      icon: '🛒',
-      title: t(selectedLanguage, 'sellerConnection'),
-      subtitle: t(selectedLanguage, 'sellerConnectionSubtitle'),
-      action: 'buyerConnect',
-      color: '#ffb26b',
-    },
-    {
-      icon: '🤝',
-      title: t(selectedLanguage, 'communityLessons'),
-      subtitle: t(selectedLanguage, 'communityLessonsSubtitle'),
-      action: 'communityLessons',
-      color: '#9bd8ff',
-    },
-    {
-      icon: '⚠️',
-      title: t(selectedLanguage, 'alertCenter'),
-      subtitle: t(selectedLanguage, 'communityWarnings'),
-      action: 'alerts',
-      color: '#ff6b6b',
-    },
-  ], [selectedLanguage]);
-
-  const handlePress = action => {
-    if (action === 'cropDoctor') onCropDoctor();
-    else if (action === 'soilAnalysis') onSoilAnalysis();
-    else if (action === 'mandi') onMandi();
-    else if (action === 'govtSchemes') onGovtSchemes();
-    else if (action === 'buyerConnect') onBuyerConnect();
-    else if (action === 'communityLessons') onCommunityLessons();
-    else if (action === 'alerts') onAlerts();
-  };
-
-  const voiceStatusColor =
-    latestAlert?.severity === 'high'
-      ? '#ff6b6b'
-      : latestAlert?.severity === 'moderate'
-      ? '#ffd966'
-      : '#7eff8a';
 
   const voiceStatus =
     latestAlert?.severity === 'high'
@@ -248,9 +177,9 @@ export default function HomeScreen({
     Tts.setDefaultLanguage(ttsCode);
     Tts.stop();
     Tts.speak(
-      t(selectedLanguage, 'districtWatchVoice', {
+      `${t(selectedLanguage, 'districtWatchTitle')}. ${t(selectedLanguage, 'districtWatchMessage', {
         location: latestAlert.locationName || t(selectedLanguage, 'yourArea'),
-      }),
+      })}`,
     );
   }, [isDistrictWatch, latestAlert, selectedLanguage]);
 
@@ -372,7 +301,6 @@ export default function HomeScreen({
         );
         return;
       }
-      // Voice input unavailable - fall back to reading farm status
       handleVoicePlay();
     }
   };
@@ -384,7 +312,7 @@ export default function HomeScreen({
   return (
     <View style={styles.container}>
       <ImageBackground source={farmImage} style={styles.background} resizeMode="cover">
-        {/* Overlays */}
+        {/* Layered atmospheric overlays */}
         <View style={styles.overlayTop} />
         <View style={styles.overlayGradient} />
 
@@ -392,282 +320,411 @@ export default function HomeScreen({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Header */}
+          {/* Header Bar */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <View style={styles.avatarContainer}>
+              <View style={styles.avatarWrap}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>👨‍🌾</Text>
+                  <Text style={styles.avatarGlyph}>🌾</Text>
                 </View>
-                <View style={styles.onlineIndicator} />
+                <View style={styles.onlineDot} />
               </View>
+
               <View>
                 <Text style={styles.greeting}>{getGreeting()}</Text>
-                <Text style={styles.headerName}>{user.name || t(selectedLanguage, 'farmerDefaultName')}</Text>
-                <View style={styles.premiumBadge}>
-                  <View style={styles.premiumIcon}>
-                    <Text style={styles.premiumStar}>⭐</Text>
-                  </View>
-                  <Text style={styles.headerSub}>{t(selectedLanguage, 'premiumMember')}</Text>
+                <Text style={styles.headerName}>
+                  {user.name || t(selectedLanguage, 'farmerDefaultName')}
+                </Text>
+                <View style={styles.tierPill}>
+                  <Text style={styles.tierStar}>★</Text>
+                  <Text style={styles.tierLabel}>{t(selectedLanguage, 'premiumMember')}</Text>
                 </View>
               </View>
             </View>
+
             <View style={styles.headerRight}>
-              <TouchableOpacity style={styles.iconButton} onPress={onLogout}>
-                <Text style={styles.iconButtonText}>🚪</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.bellButton} onPress={onAlerts}>
-                <Text style={styles.bellIcon}>🔔</Text>
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationCount}>3</Text>
+              <TouchableOpacity
+                style={styles.actionCircle}
+                onPress={onAlerts}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.circleIcon}>🔔</Text>
+                <View style={styles.alertCountBadge}>
+                  <Text style={styles.alertCountText}>3</Text>
                 </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCircle}
+                onPress={onLogout}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.circleIcon}>🚪</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Stats Row */}
-          <View style={styles.statsContainer}>
-            {statsData.map((stat, index) => (
-              <View key={index} style={styles.statCard}>
-                <Text style={styles.statIcon}>{stat.icon}</Text>
-                <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={styles.statUnit}>{stat.unit}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
+          {/* Farm Quick Stats Ribbon */}
+          <View style={styles.statsRibbon}>
+            {statsData.map((stat, i) => (
+              <View key={i} style={styles.statTile}>
+                <View style={styles.statTileHeader}>
+                  <Text style={styles.statTileGlyph}>{stat.glyph}</Text>
+                  <Text style={styles.statTileLabel}>{stat.label}</Text>
+                </View>
+                <View style={styles.statTileValueRow}>
+                  <Text style={styles.statTileValue}>{stat.value}</Text>
+                  <Text style={styles.statTileUnit}>{stat.unit}</Text>
+                </View>
               </View>
             ))}
           </View>
 
-          {/* Weather Card */}
+          {/* Weather Widget */}
           <View style={styles.weatherCard}>
-            <View style={styles.weatherCardGlow} />
-            <View style={styles.weatherHeader}>
-              <Text style={styles.weatherTitle}>{t(selectedLanguage, 'weatherNow')}</Text>
-              <Text style={styles.weatherLocation}>
-                📍 {weather?.locationName || `${user.district || user.state || t(selectedLanguage, 'yourArea')}`}
-              </Text>
+            <View style={styles.weatherHeaderRow}>
+              <View style={styles.weatherLocationBox}>
+                <Text style={styles.weatherBadgeLabel}>MICRO-CLIMATE</Text>
+                <Text style={styles.weatherLocation}>
+                  📍 {weather?.locationName || `${user.district || user.state || t(selectedLanguage, 'yourArea')}`}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.listenWeatherBtn}
+                onPress={handleVoicePlay}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.listenWeatherIcon}>🔊</Text>
+              </TouchableOpacity>
             </View>
 
             {weatherLoading ? (
-              <Text style={styles.weatherLoading}>{t(selectedLanguage, 'loadingWeather')}</Text>
+              <Text style={styles.weatherLoadingText}>{t(selectedLanguage, 'loadingWeather')}</Text>
             ) : weather ? (
               <>
                 <View style={styles.weatherMainRow}>
                   <Text style={styles.weatherTemp}>
-                    {Math.round(Number(weather.temperatureC))}°C
+                    {Math.round(Number(weather.temperatureC))}°
                   </Text>
-                  <Text style={styles.weatherCondition}>
-                    {t(selectedLanguage, weather.conditionKey)}
-                  </Text>
+                  <View style={styles.weatherConditionBox}>
+                    <Text style={styles.weatherCondition}>
+                      {t(selectedLanguage, weather.conditionKey)}
+                    </Text>
+                    <Text style={styles.weatherFeelsLike}>
+                      {t(selectedLanguage, 'feelsLike')}: {Math.round(Number(weather.feelsLikeC))}°C
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.weatherMetaRow}>
-                  <Text style={styles.weatherMeta}>
-                    {t(selectedLanguage, 'feelsLike')}: {Math.round(Number(weather.feelsLikeC))}°C
-                  </Text>
-                  <Text style={styles.weatherMeta}>
-                    {t(selectedLanguage, 'humidity')}: {Math.round(Number(weather.humidity))}%
-                  </Text>
-                  <Text style={styles.weatherMeta}>
-                    {t(selectedLanguage, 'wind')}: {Math.round(Number(weather.windKmh))} km/h
-                  </Text>
+
+                <View style={styles.weatherMetricsRow}>
+                  <View style={styles.weatherMetric}>
+                    <Text style={styles.metricLabel}>{t(selectedLanguage, 'humidity')}</Text>
+                    <Text style={styles.metricValue}>{Math.round(Number(weather.humidity))}%</Text>
+                  </View>
+                  <View style={styles.metricDivider} />
+                  <View style={styles.weatherMetric}>
+                    <Text style={styles.metricLabel}>{t(selectedLanguage, 'wind')}</Text>
+                    <Text style={styles.metricValue}>{Math.round(Number(weather.windKmh))} km/h</Text>
+                  </View>
+                  <View style={styles.metricDivider} />
+                  <View style={styles.weatherMetric}>
+                    <Text style={styles.metricLabel}>STATUS</Text>
+                    <Text style={[styles.metricValue, { color: colors.emerald }]}>{voiceStatus}</Text>
+                  </View>
                 </View>
               </>
             ) : (
-              <Text style={styles.weatherLoading}>{t(selectedLanguage, 'weatherUnavailable')}</Text>
+              <Text style={styles.weatherLoadingText}>{t(selectedLanguage, 'weatherUnavailable')}</Text>
             )}
           </View>
 
-          {rewards ? (
-            <View style={styles.impactCard}>
-              <View style={styles.impactRow}>
-                <Text style={styles.impactTitle}>🏅 {t(selectedLanguage, 'myImpact')}</Text>
-                <Text style={styles.impactBadge}>
-                  {currentBadge ? formatBadge(currentBadge, selectedLanguage) : ''}
+          {/* Critical District Watch Banner (if active) */}
+          {isDistrictWatch && latestAlert ? (
+            <View style={styles.districtWatchCard}>
+              <View style={styles.watchHeader}>
+                <View style={styles.watchDot} />
+                <Text style={styles.watchHeading}>
+                  {t(selectedLanguage, 'districtWatchTitle')}
                 </Text>
               </View>
-              <Text style={styles.impactPoints}>
-                {t(selectedLanguage, 'totalPoints')}: {rewards.points || 0}
-              </Text>
-              <Text style={styles.impactStats}>
-                {t(selectedLanguage, 'lessonsPosted')}: {rewards.lessonsPosted || 0} | {t(selectedLanguage, 'helpfulReceived')}: {rewards.helpfulReceived || 0} | {t(selectedLanguage, 'verifiedOutcomes')}: {rewards.verifiedOutcomes || 0}
-              </Text>
-              {nextBadge ? (
-                <Text style={styles.impactHint}>
-                  {t(selectedLanguage, 'nextBadgeIn', { points: nextBadge.pointsNeeded })}
-                </Text>
-              ) : (
-                <Text style={styles.impactHint}>{t(selectedLanguage, 'maxBadgeReached')}</Text>
-              )}
-            </View>
-          ) : null}
-
-          {isDistrictWatch ? (
-            <View style={styles.watchCard}>
-              <Text style={styles.watchTitle}>🚨 {t(selectedLanguage, 'districtWatchTitle')}</Text>
-              <Text style={styles.watchText}>
+              <Text style={styles.watchBody}>
                 {t(selectedLanguage, 'districtWatchMessage', {
                   location: latestAlert.locationName || t(selectedLanguage, 'yourArea'),
                 })}
               </Text>
-              <TouchableOpacity style={styles.watchBtn} onPress={onAlerts}>
-                <Text style={styles.watchBtnText}>{t(selectedLanguage, 'districtWatchAction')}</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-
-          {lastVoiceText ? (
-            <View style={styles.voiceCaptureCard}>
-              <Text style={styles.voiceCaptureLabel}>{t(selectedLanguage, 'voiceHeard')}</Text>
-              <Text style={styles.voiceCaptureText}>"{lastVoiceText}"</Text>
-              {lastVoiceActionKey ? (
-                <Text style={styles.voiceCaptureAction}>
-                  {t(selectedLanguage, 'voiceActionTaken')}: {t(selectedLanguage, lastVoiceActionKey)}
-                </Text>
-              ) : null}
-            </View>
-          ) : null}
-
-          {/* Yojanas Card */}
-          <View style={styles.voiceCard}>
-            <View style={styles.voiceCardGlow} />
-            <View style={styles.voiceCardContent}>
-              <View style={styles.yojanaIconWrap}>
-                <Text style={styles.yojanaIcon}>🏛️</Text>
-              </View>
-              <View style={styles.voiceCenter}>
-                <View style={styles.voiceHeader}>
-                  <View style={styles.yojanaTag}>
-                    <Text style={styles.yojanaTagText}>{t(selectedLanguage, 'govtSchemes')}</Text>
-                  </View>
-                </View>
-                <Text style={styles.voiceMessage}>{t(selectedLanguage, 'govtSchemesSubtitle')}</Text>
-              </View>
-              <TouchableOpacity style={styles.voicePlayBtn} onPress={onGovtSchemes}>
-                <Text style={styles.voicePlayIcon}>→</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Dashboard Section - Simplified */}
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>{t(selectedLanguage, 'farmDashboard')}</Text>
-              <Text style={styles.sectionSubtitle}>{t(selectedLanguage, 'monitorFarm')}</Text>
-            </View>
-          </View>
-
-          {/* Simplified Dashboard - 3 Large Cards */}
-          <View style={styles.simpleDashboard}>
-            {dashboardItems.map((item, index) => (
               <TouchableOpacity
-                key={index}
-                style={[styles.simpleCard, { borderLeftColor: item.color }]}
-                onPress={() => handlePress(item.action)}
+                style={styles.watchActionBtn}
+                onPress={onAlerts}
                 activeOpacity={0.85}
               >
-                <View style={[styles.simpleIconBox, { backgroundColor: item.color + '20' }]}>
-                  <Text style={styles.simpleIcon}>{item.icon}</Text>
-                </View>
-                <View style={styles.simpleCardContent}>
-                  <Text style={styles.simpleCardTitle}>{item.title}</Text>
-                  <Text style={styles.simpleCardSubtitle}>{item.subtitle}</Text>
-                </View>
-                <View style={styles.simpleArrow}>
-                  <Text style={styles.simpleArrowText}>→</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Quick Actions - Simplified */}
-          <View style={styles.quickSection}>
-            <Text style={styles.quickTitle}>{t(selectedLanguage, 'quickActions')}</Text>
-            <View style={styles.quickGrid}>
-              <TouchableOpacity style={styles.quickCard} onPress={onCropDoctor}>
-                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(126,255,138,0.15)' }]}>
-                  <Text style={styles.quickIcon}>📸</Text>
-                </View>
-                <Text style={styles.quickLabel}>{t(selectedLanguage, 'scanCrop')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard} onPress={onSoilAnalysis}>
-                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(196,163,90,0.15)' }]}>
-                  <Text style={styles.quickIcon}>🌍</Text>
-                </View>
-                <Text style={styles.quickLabel}>{t(selectedLanguage, 'scanSoil')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard} onPress={onAlerts}>
-                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(255,107,107,0.15)' }]}>
-                  <Text style={styles.quickIcon}>🚨</Text>
-                </View>
-                <Text style={styles.quickLabel}>{t(selectedLanguage, 'viewAlerts')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard} onPress={onMandi}>
-                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(255,217,102,0.15)' }]}>
-                  <Text style={styles.quickIcon}>📊</Text>
-                </View>
-                <Text style={styles.quickLabel}>{t(selectedLanguage, 'checkPrices')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard} onPress={onBuyerConnect}>
-                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(255,178,107,0.18)' }]}>
-                  <Text style={styles.quickIcon}>🛒</Text>
-                </View>
-                <Text style={styles.quickLabel}>{t(selectedLanguage, 'connectBuyerQuick')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickCard} onPress={onCommunityLessons}>
-                <View style={[styles.quickIconBox, { backgroundColor: 'rgba(155,216,255,0.18)' }]}>
-                  <Text style={styles.quickIcon}>🤝</Text>
-                </View>
-                <Text style={styles.quickLabel}>{t(selectedLanguage, 'shareLessonQuick')}</Text>
+                <Text style={styles.watchActionText}>
+                  {t(selectedLanguage, 'districtWatchAction')} →
+                </Text>
               </TouchableOpacity>
             </View>
+          ) : null}
+
+          {/* Live Voice Feed Banner */}
+          {lastVoiceText ? (
+            <View style={styles.voiceTranscriptCard}>
+              <View style={styles.voiceTranscriptHeader}>
+                <Text style={styles.voiceHeardBadge}>{t(selectedLanguage, 'voiceHeard')}</Text>
+                {lastVoiceActionKey ? (
+                  <Text style={styles.voiceActionChip}>
+                    ✓ {t(selectedLanguage, lastVoiceActionKey)}
+                  </Text>
+                ) : null}
+              </View>
+              <Text style={styles.voiceTranscriptText}>"{lastVoiceText}"</Text>
+            </View>
+          ) : null}
+
+          {/* Section: Command Modules */}
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>{t(selectedLanguage, 'farmDashboard')}</Text>
+            <Text style={styles.sectionSubtitle}>{t(selectedLanguage, 'monitorFarm')}</Text>
           </View>
+
+          {/* Featured Cards: Crop Doctor & Mandi Prices */}
+          <View style={styles.featuredGrid}>
+            {/* Crop Doctor Hero Card */}
+            <TouchableOpacity
+              style={[styles.featureHeroCard, { borderColor: 'rgba(52, 211, 153, 0.35)' }]}
+              onPress={onCropDoctor}
+              activeOpacity={0.88}
+            >
+              <View style={styles.cardHeaderTop}>
+                <View style={[styles.iconPill, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
+                  <Text style={styles.iconGlyph}>📸</Text>
+                </View>
+                <View style={styles.tagPillEmerald}>
+                  <Text style={styles.tagTextEmerald}>AI DIAGNOSIS</Text>
+                </View>
+              </View>
+
+              <Text style={styles.heroCardTitle}>{t(selectedLanguage, 'cropDoctor')}</Text>
+              <Text style={styles.heroCardSub}>{t(selectedLanguage, 'aiDiseaseDetection')}</Text>
+
+              <View style={styles.cardFooterRow}>
+                <Text style={styles.cardActionLink}>{t(selectedLanguage, 'scanCrop')}</Text>
+                <Text style={styles.cardArrowEmerald}>→</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Mandi Prices Hero Card */}
+            <TouchableOpacity
+              style={[styles.featureHeroCard, { borderColor: 'rgba(251, 191, 36, 0.3)' }]}
+              onPress={onMandi}
+              activeOpacity={0.88}
+            >
+              <View style={styles.cardHeaderTop}>
+                <View style={[styles.iconPill, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
+                  <Text style={styles.iconGlyph}>📈</Text>
+                </View>
+                <View style={styles.tagPillGold}>
+                  <Text style={styles.tagTextGold}>LIVE MANDI</Text>
+                </View>
+              </View>
+
+              <Text style={styles.heroCardTitle}>{t(selectedLanguage, 'mandiPrices')}</Text>
+              <Text style={styles.heroCardSub}>{t(selectedLanguage, 'liveMarketRates')}</Text>
+
+              <View style={styles.cardFooterRow}>
+                <Text style={[styles.cardActionLink, { color: colors.gold }]}>
+                  {t(selectedLanguage, 'checkPrices')}
+                </Text>
+                <Text style={[styles.cardArrowEmerald, { color: colors.gold }]}>→</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Secondary 2-Column Grid */}
+          <View style={styles.twoColGrid}>
+            {/* Buyer Direct Connect */}
+            <TouchableOpacity
+              style={styles.colCard}
+              onPress={onBuyerConnect}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.colIconBox, { backgroundColor: 'rgba(251, 146, 60, 0.15)' }]}>
+                <Text style={styles.colIcon}>🛒</Text>
+              </View>
+              <Text style={styles.colTitle}>{t(selectedLanguage, 'sellerConnection')}</Text>
+              <Text style={styles.colSub}>{t(selectedLanguage, 'sellerConnectionSubtitle')}</Text>
+            </TouchableOpacity>
+
+            {/* Community Alert Radar */}
+            <TouchableOpacity
+              style={styles.colCard}
+              onPress={onAlerts}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.colIconBox, { backgroundColor: 'rgba(248, 113, 113, 0.15)' }]}>
+                <Text style={styles.colIcon}>🚨</Text>
+              </View>
+              <Text style={styles.colTitle}>{t(selectedLanguage, 'alertCenter')}</Text>
+              <Text style={styles.colSub}>{t(selectedLanguage, 'communityWarnings')}</Text>
+            </TouchableOpacity>
+
+            {/* Community Lessons Peer Network */}
+            <TouchableOpacity
+              style={styles.colCard}
+              onPress={onCommunityLessons}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.colIconBox, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
+                <Text style={styles.colIcon}>🤝</Text>
+              </View>
+              <Text style={styles.colTitle}>{t(selectedLanguage, 'communityLessons')}</Text>
+              <Text style={styles.colSub}>{t(selectedLanguage, 'communityLessonsSubtitle')}</Text>
+            </TouchableOpacity>
+
+            {/* Soil Health Analysis */}
+            <TouchableOpacity
+              style={styles.colCard}
+              onPress={onSoilAnalysis}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.colIconBox, { backgroundColor: 'rgba(217, 119, 6, 0.15)' }]}>
+                <Text style={styles.colIcon}>🌍</Text>
+              </View>
+              <Text style={styles.colTitle}>{t(selectedLanguage, 'soilAnalysis')}</Text>
+              <Text style={styles.colSub}>{t(selectedLanguage, 'soilAnalysisSubtitle')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Full-Width Govt Schemes & Subsidies Card */}
+          <TouchableOpacity
+            style={styles.schemesFullCard}
+            onPress={onGovtSchemes}
+            activeOpacity={0.88}
+          >
+            <View style={styles.schemesIconWrap}>
+              <Text style={styles.schemesGlyph}>🏛️</Text>
+            </View>
+            <View style={styles.schemesContent}>
+              <View style={styles.schemesTag}>
+                <Text style={styles.schemesTagText}>CENTRAL & STATE</Text>
+              </View>
+              <Text style={styles.schemesTitle}>{t(selectedLanguage, 'govtSchemes')}</Text>
+              <Text style={styles.schemesSubtitle}>{t(selectedLanguage, 'govtSchemesSubtitle')}</Text>
+            </View>
+            <Text style={styles.schemesArrow}>→</Text>
+          </TouchableOpacity>
+
+          {/* Farmer Impact & Badges */}
+          {rewards ? (
+            <View style={styles.impactCard}>
+              <View style={styles.impactTopRow}>
+                <View style={styles.impactHeaderLeft}>
+                  <Text style={styles.impactGlyph}>🏅</Text>
+                  <View>
+                    <Text style={styles.impactTitle}>{t(selectedLanguage, 'myImpact')}</Text>
+                    <Text style={styles.impactBadgeText}>
+                      {currentBadge ? formatBadge(currentBadge, selectedLanguage) : 'Farmer Starter'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.pointsPill}>
+                  <Text style={styles.pointsNumber}>{rewards.points || 0}</Text>
+                  <Text style={styles.pointsLabel}>PTS</Text>
+                </View>
+              </View>
+
+              <View style={styles.impactStatsRow}>
+                <View style={styles.impactStat}>
+                  <Text style={styles.impactStatValue}>{rewards.lessonsPosted || 0}</Text>
+                  <Text style={styles.impactStatLabel}>{t(selectedLanguage, 'lessonsPosted')}</Text>
+                </View>
+                <View style={styles.impactDivider} />
+                <View style={styles.impactStat}>
+                  <Text style={styles.impactStatValue}>{rewards.helpfulReceived || 0}</Text>
+                  <Text style={styles.impactStatLabel}>{t(selectedLanguage, 'helpfulReceived')}</Text>
+                </View>
+                <View style={styles.impactDivider} />
+                <View style={styles.impactStat}>
+                  <Text style={styles.impactStatValue}>{rewards.verifiedOutcomes || 0}</Text>
+                  <Text style={styles.impactStatLabel}>{t(selectedLanguage, 'verifiedOutcomes')}</Text>
+                </View>
+              </View>
+
+              {nextBadge ? (
+                <View style={styles.progressWrap}>
+                  <View style={styles.progressBar}>
+                    <View style={styles.progressFill} />
+                  </View>
+                  <Text style={styles.progressHint}>
+                    {t(selectedLanguage, 'nextBadgeIn', { points: nextBadge.pointsNeeded })}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.progressHint}>{t(selectedLanguage, 'maxBadgeReached')}</Text>
+              )}
+            </View>
+          ) : null}
         </ScrollView>
 
-        {/* Bottom Navigation */}
+        {/* Floating Bottom Navigation Dock */}
         <View style={styles.bottomNav}>
-          <View style={styles.bottomNavInner}>
-            <TouchableOpacity style={styles.navTab}>
-              <View style={styles.navTabActive}>
-                <Text style={styles.navIcon}>🏠</Text>
+          <View style={styles.bottomNavDock}>
+            {/* Tab: Home */}
+            <TouchableOpacity style={styles.dockTab} activeOpacity={0.8}>
+              <View style={styles.activePillIndicator}>
+                <Text style={styles.dockIconActive}>🏠</Text>
               </View>
-              <Text style={[styles.navLabel, styles.navLabelActive]}>{t(selectedLanguage, 'home')}</Text>
+              <Text style={styles.dockLabelActive}>{t(selectedLanguage, 'home')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.navTab} onPress={onCropDoctor}>
-              <Text style={styles.navIcon}>🌾</Text>
-              <Text style={styles.navLabel}>{t(selectedLanguage, 'farm')}</Text>
+            {/* Tab: Crop Doctor */}
+            <TouchableOpacity
+              style={styles.dockTab}
+              onPress={onCropDoctor}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.dockIcon}>🌿</Text>
+              <Text style={styles.dockLabel}>{t(selectedLanguage, 'farm')}</Text>
             </TouchableOpacity>
 
-            {/* Center FAB */}
-            <View style={styles.fabContainer}>
+            {/* Center Voice AI FAB */}
+            <View style={styles.fabWrapper}>
               <TouchableOpacity
-                style={[styles.fab, isCommandListening && styles.fabListening]}
+                style={[styles.voiceFab, isCommandListening && styles.voiceFabListening]}
                 onPress={handleAskAiVoiceCommand}
                 onLongPress={handleVoicePlay}
+                activeOpacity={0.9}
               >
-                <View style={styles.fabInner}>
-                  <Text style={styles.fabIcon}>🎤</Text>
-                </View>
+                <Text style={styles.voiceFabIcon}>🎙️</Text>
               </TouchableOpacity>
-              <Text style={styles.fabLabel}>
+              <Text style={styles.fabPromptText}>
                 {isCommandListening
                   ? t(selectedLanguage, 'voiceListeningNow')
                   : t(selectedLanguage, 'askAi')}
               </Text>
               {isCommandListening ? (
-                <TouchableOpacity style={styles.stopChip} onPress={stopVoiceSession}>
-                  <Text style={styles.stopChipText}>{t(selectedLanguage, 'voiceStopListening')}</Text>
+                <TouchableOpacity style={styles.stopPill} onPress={stopVoiceSession}>
+                  <Text style={styles.stopPillText}>{t(selectedLanguage, 'voiceStopListening')}</Text>
                 </TouchableOpacity>
               ) : null}
             </View>
 
-            <TouchableOpacity style={styles.navTab} onPress={onMandi}>
-              <Text style={styles.navIcon}>🏪</Text>
-              <Text style={styles.navLabel}>{t(selectedLanguage, 'market')}</Text>
+            {/* Tab: Market */}
+            <TouchableOpacity
+              style={styles.dockTab}
+              onPress={onMandi}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.dockIcon}>🏪</Text>
+              <Text style={styles.dockLabel}>{t(selectedLanguage, 'market')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.navTab} onPress={showComingSoon}>
-              <Text style={styles.navIcon}>👤</Text>
-              <Text style={styles.navLabel}>{t(selectedLanguage, 'profile')}</Text>
+            {/* Tab: Profile */}
+            <TouchableOpacity
+              style={styles.dockTab}
+              onPress={showComingSoon}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.dockIcon}>👤</Text>
+              <Text style={styles.dockLabel}>{t(selectedLanguage, 'profile')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -679,25 +736,26 @@ export default function HomeScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.ground,
   },
   background: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 15, 8, 0.88)',
+    backgroundColor: 'rgba(5, 14, 8, 0.88)',
   },
   overlayGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '40%',
-    backgroundColor: 'rgba(5, 20, 10, 0.4)',
+    height: '45%',
+    backgroundColor: 'rgba(5, 18, 9, 0.6)',
   },
   scrollContent: {
-    paddingBottom: 110,
+    paddingBottom: 120,
   },
 
   // Header
@@ -705,711 +763,747 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 16,
+    paddingBottom: spacing.lg,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
   },
-  avatarContainer: {
+  avatarWrap: {
     position: 'relative',
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: 'rgba(126, 255, 138, 0.12)',
+    width: 48,
+    height: 48,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(126, 255, 138, 0.3)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(52, 211, 153, 0.35)',
   },
-  avatarText: {
-    fontSize: 26,
+  avatarGlyph: {
+    fontSize: 22,
   },
-  onlineIndicator: {
+  onlineDot: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
+    bottom: -2,
+    right: -2,
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#7eff8a',
+    backgroundColor: colors.emerald,
     borderWidth: 2,
-    borderColor: 'rgba(10, 31, 18, 1)',
+    borderColor: '#07130a',
   },
   greeting: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    color: colors.muted,
     fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   headerName: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#fff',
-    marginBottom: 4,
+    fontSize: 18,
+    color: colors.ink,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    marginTop: 1,
   },
-  premiumBadge: {
+  tierPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    marginTop: 2,
   },
-  premiumIcon: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  premiumStar: {
+  tierStar: {
+    color: colors.gold,
     fontSize: 10,
   },
-  headerSub: {
-    fontSize: 11,
-    color: '#ffd700',
+  tierLabel: {
+    color: colors.gold,
+    fontSize: 10,
     fontWeight: '700',
+    letterSpacing: 0.4,
   },
   headerRight: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    gap: 8,
   },
-  iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  actionCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  iconButtonText: {
-    fontSize: 18,
+  circleIcon: {
+    fontSize: 16,
   },
-  bellButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  bellIcon: {
-    fontSize: 18,
-  },
-  notificationBadge: {
+  alertCountBadge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#ff6b6b',
+    top: -2,
+    right: -2,
+    backgroundColor: colors.coral,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(10, 31, 18, 1)',
   },
-  notificationCount: {
-    fontSize: 10,
-    color: '#fff',
+  alertCountText: {
+    color: '#ffffff',
+    fontSize: 9,
     fontWeight: '800',
   },
 
-  // Stats Row
-  statsContainer: {
+  // Stats Ribbon
+  statsRibbon: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.xl,
     gap: 10,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
-  statCard: {
+  statTile: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 16,
-    padding: 12,
-    alignItems: 'center',
+    backgroundColor: 'rgba(18, 36, 25, 0.8)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: 12,
   },
-  statIcon: {
-    fontSize: 18,
+  statTileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     marginBottom: 6,
   },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#fff',
+  statTileGlyph: {
+    fontSize: 13,
   },
-  statUnit: {
+  statTileLabel: {
     fontSize: 10,
-    color: '#7eff8a',
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  statLabel: {
-    fontSize: 9,
-    color: 'rgba(255,255,255,0.5)',
+    color: colors.muted,
     fontWeight: '600',
-    marginTop: 4,
+    textTransform: 'uppercase',
+  },
+  statTileValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  statTileValue: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.ink,
+  },
+  statTileUnit: {
+    fontSize: 10,
+    color: colors.muted,
+    fontWeight: '600',
   },
 
   // Weather Card
   weatherCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(126, 255, 138, 0.18)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    padding: 14,
+    marginHorizontal: spacing.xl,
+    backgroundColor: 'rgba(16, 34, 23, 0.88)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.2)',
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
   },
-  weatherCardGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(47, 141, 65, 0.08)',
+  weatherHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.md,
   },
-  weatherHeader: {
-    marginBottom: 10,
+  weatherLocationBox: {
+    flex: 1,
   },
-  weatherTitle: {
-    fontSize: 12,
+  weatherBadgeLabel: {
+    fontSize: 9,
     fontWeight: '800',
-    color: '#7eff8a',
-    letterSpacing: 0.8,
+    color: colors.emerald,
+    letterSpacing: 1.2,
+    marginBottom: 2,
   },
   weatherLocation: {
-    marginTop: 4,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.75)',
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.ink,
   },
-  weatherLoading: {
+  listenWeatherBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+  },
+  listenWeatherIcon: {
+    fontSize: 14,
+  },
+  weatherLoadingText: {
+    color: colors.muted,
     fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '600',
+    paddingVertical: spacing.md,
   },
   weatherMainRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: spacing.md,
   },
   weatherTemp: {
-    fontSize: 34,
+    fontSize: 44,
     fontWeight: '900',
-    color: '#fff',
-    lineHeight: 38,
+    color: '#ffffff',
+    letterSpacing: -1,
+    lineHeight: 48,
+  },
+  weatherConditionBox: {
+    flex: 1,
   },
   weatherCondition: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#dfffe4',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: 'rgba(126,255,138,0.12)',
-  },
-  weatherMetaRow: {
-    flexDirection: 'row',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  weatherMeta: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.82)',
+    fontSize: 17,
     fontWeight: '700',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 8,
+    color: colors.ink,
   },
-  impactCard: {
-    marginHorizontal: 16,
-    marginBottom: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,217,102,0.35)',
-    backgroundColor: 'rgba(255,217,102,0.12)',
-    padding: 12,
+  weatherFeelsLike: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
   },
-  impactRow: {
+  weatherMetricsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
-    gap: 8,
-  },
-  impactTitle: {
-    color: '#ffe8a6',
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  impactBadge: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  impactPoints: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '900',
-    marginBottom: 3,
-  },
-  impactStats: {
-    color: 'rgba(255,255,255,0.82)',
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '700',
-  },
-  impactHint: {
-    marginTop: 6,
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-
-  watchCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,107,107,0.5)',
-    backgroundColor: 'rgba(255,107,107,0.14)',
-    padding: 14,
-  },
-  watchTitle: {
-    color: '#ffb3b3',
-    fontSize: 14,
-    fontWeight: '900',
-    marginBottom: 6,
-  },
-  watchText: {
-    color: 'rgba(255,255,255,0.84)',
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '700',
-  },
-  watchBtn: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderRadius: 9,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: radii.md,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-  watchBtnText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-
-  voiceCaptureCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(77,171,247,0.42)',
-    backgroundColor: 'rgba(77,171,247,0.12)',
-    padding: 12,
-  },
-  voiceCaptureLabel: {
-    color: '#b9deff',
-    fontSize: 11,
-    fontWeight: '900',
-    marginBottom: 5,
-  },
-  voiceCaptureText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  voiceCaptureAction: {
-    color: 'rgba(255,255,255,0.82)',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  // Voice Card
-  voiceCard: {
-    marginHorizontal: 16,
-    marginBottom: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(126, 255, 138, 0.2)',
-  },
-  voiceCardGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(47, 141, 65, 0.08)',
-  },
-  voiceCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 14,
-  },
-  yojanaIconWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: 'rgba(77,171,247,0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(77,171,247,0.45)',
-  },
-  yojanaIcon: {
-    fontSize: 20,
-  },
-  yojanaTag: {
-    backgroundColor: 'rgba(77,171,247,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  yojanaTagText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#a9d7ff',
-    letterSpacing: 1,
-  },
-  voiceLeft: {
-    alignItems: 'center',
-  },
-  voiceMicContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  voiceMicPulse: {
-    position: 'absolute',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(47, 141, 65, 0.2)',
-  },
-  voiceMic: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#2f8d41',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2f8d41',
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  voiceMicIcon: {
-    fontSize: 20,
-  },
-  voiceCenter: {
+  weatherMetric: {
     flex: 1,
+    alignItems: 'center',
   },
-  voiceHeader: {
+  metricLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.faint,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  metricValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.inkSecondary,
+    marginTop: 2,
+  },
+  metricDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+
+  // District Watch Banner
+  districtWatchCard: {
+    marginHorizontal: spacing.xl,
+    backgroundColor: 'rgba(248, 113, 113, 0.12)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.35)',
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  watchHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 6,
   },
-  aiTag: {
-    backgroundColor: 'rgba(126, 255, 138, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+  watchDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.coral,
   },
-  aiTagText: {
-    fontSize: 9,
+  watchHeading: {
+    color: colors.coral,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#7eff8a',
-    letterSpacing: 1,
-  },
-  liveTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#ff6b6b',
-  },
-  liveText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#ff6b6b',
     letterSpacing: 0.5,
   },
-  voiceMessage: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.85)',
-    fontWeight: '600',
-    lineHeight: 20,
+  watchBody: {
+    color: colors.inkSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: spacing.md,
   },
-  voiceHighlight: {
-    fontWeight: '900',
-  },
-  voicePlayBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  voicePlayIcon: {
-    fontSize: 14,
-    color: '#fff',
-    marginLeft: 2,
-  },
-
-  // Section Header
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#fff',
-  },
-  sectionSubtitle: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.45)',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  viewAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  viewAllText: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '700',
-  },
-  viewAllArrow: {
-    fontSize: 12,
-    color: '#7eff8a',
-    fontWeight: '700',
-  },
-
-  // Simplified Dashboard - Large Cards
-  simpleDashboard: {
+  watchActionBtn: {
+    backgroundColor: colors.coral,
+    paddingVertical: 9,
     paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 8,
+    borderRadius: radii.full,
+    alignSelf: 'flex-start',
   },
-  simpleCard: {
+  watchActionText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  // Voice Transcript Card
+  voiceTranscriptCard: {
+    marginHorizontal: spacing.xl,
+    backgroundColor: 'rgba(52, 211, 153, 0.08)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  voiceTranscriptHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(12, 32, 20, 0.9)',
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderLeftWidth: 4,
-  },
-  simpleIconBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  simpleIcon: {
-    fontSize: 32,
-  },
-  simpleCardContent: {
-    flex: 1,
-  },
-  simpleCardTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#fff',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
-  simpleCardSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.55)',
-    fontWeight: '600',
-  },
-  simpleArrow: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: 'rgba(126, 255, 138, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  simpleArrowText: {
-    fontSize: 18,
-    color: '#7eff8a',
+  voiceHeardBadge: {
+    fontSize: 10,
     fontWeight: '700',
+    color: colors.emerald,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  voiceActionChip: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.emerald,
+  },
+  voiceTranscriptText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.ink,
+    fontStyle: 'italic',
   },
 
-  // Quick Actions - Grid Layout
-  quickSection: {
-    marginTop: 24,
-    paddingHorizontal: 16,
+  // Section Titles
+  sectionTitleRow: {
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.md,
   },
-  quickTitle: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 19,
     fontWeight: '800',
-    color: '#fff',
-    marginBottom: 14,
+    color: colors.ink,
+    letterSpacing: -0.3,
   },
-  quickGrid: {
+  sectionSubtitle: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
+  },
+
+  // Featured Cards Grid
+  featuredGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.xl,
+    gap: 12,
+    marginBottom: spacing.md,
+  },
+  featureHeroCard: {
+    flex: 1,
+    backgroundColor: 'rgba(18, 36, 25, 0.88)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    padding: spacing.lg,
+    justifyContent: 'space-between',
+    minHeight: 160,
+  },
+  cardHeaderTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
-  },
-  quickCard: {
-    flex: 1,
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    marginBottom: spacing.md,
   },
-  quickIconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+  iconPill: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
   },
-  quickIcon: {
-    fontSize: 26,
+  iconGlyph: {
+    fontSize: 18,
   },
-  quickLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '700',
-    textAlign: 'center',
-    lineHeight: 16,
+  tagPillEmerald: {
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  tagTextEmerald: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.emerald,
+    letterSpacing: 0.5,
+  },
+  tagPillGold: {
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  tagTextGold: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.gold,
+    letterSpacing: 0.5,
+  },
+  heroCardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: -0.2,
+  },
+  heroCardSub: {
+    fontSize: 11,
+    color: colors.muted,
+    lineHeight: 15,
+    marginTop: 3,
+    marginBottom: spacing.md,
+  },
+  cardFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  cardActionLink: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.emerald,
+    letterSpacing: 0.3,
+  },
+  cardArrowEmerald: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.emerald,
   },
 
-  // Bottom Navigation
+  // 2-Column Grid
+  twoColGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: spacing.xl,
+    gap: 12,
+    marginBottom: spacing.md,
+  },
+  colCard: {
+    width: '48%',
+    backgroundColor: 'rgba(18, 36, 25, 0.75)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.md,
+  },
+  colIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  colIcon: {
+    fontSize: 16,
+  },
+  colTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  colSub: {
+    fontSize: 10,
+    color: colors.muted,
+    marginTop: 2,
+    lineHeight: 14,
+  },
+
+  // Full-Width Schemes Card
+  schemesFullCard: {
+    marginHorizontal: spacing.xl,
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: spacing.lg,
+  },
+  schemesIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(56, 189, 248, 0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  schemesGlyph: {
+    fontSize: 22,
+  },
+  schemesContent: {
+    flex: 1,
+  },
+  schemesTag: {
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  schemesTagText: {
+    color: colors.sky,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  schemesTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  schemesSubtitle: {
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 2,
+  },
+  schemesArrow: {
+    fontSize: 18,
+    color: colors.sky,
+    fontWeight: '800',
+  },
+
+  // Impact Card
+  impactCard: {
+    marginHorizontal: spacing.xl,
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  impactTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  impactHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  impactGlyph: {
+    fontSize: 24,
+  },
+  impactTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  impactBadgeText: {
+    fontSize: 12,
+    color: colors.gold,
+    fontWeight: '700',
+  },
+  pointsPill: {
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    alignItems: 'center',
+  },
+  pointsNumber: {
+    color: colors.gold,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  pointsLabel: {
+    color: colors.gold,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  impactStatsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: radii.md,
+    paddingVertical: 10,
+    marginBottom: spacing.md,
+  },
+  impactStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  impactStatValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.ink,
+  },
+  impactStatLabel: {
+    fontSize: 9,
+    color: colors.muted,
+    fontWeight: '600',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  impactDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  progressWrap: {
+    gap: 6,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    width: '65%',
+    backgroundColor: colors.gold,
+    borderRadius: 2,
+  },
+  progressHint: {
+    fontSize: 11,
+    color: colors.muted,
+    textAlign: 'center',
+  },
+
+  // Bottom Navigation Dock
   bottomNav: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 12,
-    paddingBottom: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  bottomNavInner: {
+  bottomNavDock: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(8, 24, 14, 0.97)',
-    borderRadius: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    backgroundColor: 'rgba(8, 20, 12, 0.96)',
+    borderRadius: radii.xl,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
   },
-  navTab: {
+  dockTab: {
     alignItems: 'center',
     flex: 1,
     paddingVertical: 4,
   },
-  navTabActive: {
-    backgroundColor: 'rgba(126, 255, 138, 0.12)',
-    padding: 8,
-    borderRadius: 14,
-    marginBottom: 4,
+  activePillIndicator: {
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: radii.full,
+    marginBottom: 2,
   },
-  navIcon: {
+  dockIcon: {
+    fontSize: 18,
+    opacity: 0.65,
+  },
+  dockIconActive: {
+    fontSize: 18,
+  },
+  dockLabel: {
+    fontSize: 10,
+    color: colors.faint,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  dockLabelActive: {
+    fontSize: 10,
+    color: colors.emerald,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  fabWrapper: {
+    alignItems: 'center',
+    marginTop: -26,
+    marginHorizontal: 4,
+  },
+  voiceFab: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.full,
+    backgroundColor: '#1b6334',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: 'rgba(52, 211, 153, 0.6)',
+    shadowColor: colors.emerald,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  voiceFabListening: {
+    backgroundColor: colors.coral,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: colors.coral,
+  },
+  voiceFabIcon: {
     fontSize: 22,
   },
-  navLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.4)',
-    marginTop: 4,
-    fontWeight: '600',
-  },
-  navLabelActive: {
-    color: '#7eff8a',
-    fontWeight: '700',
-  },
-  fabContainer: {
-    alignItems: 'center',
-    marginTop: -32,
-    marginHorizontal: 8,
-  },
-  fab: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
-    backgroundColor: '#2f8d41',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2f8d41',
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 3,
-    borderColor: 'rgba(8, 24, 14, 0.97)',
-  },
-  fabListening: {
-    backgroundColor: '#ff6b6b',
-    shadowColor: '#ff6b6b',
-  },
-  fabInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabIcon: {
-    fontSize: 26,
-  },
-  fabLabel: {
-    fontSize: 10,
-    color: '#7eff8a',
+  fabPromptText: {
+    fontSize: 9,
+    color: colors.emerald,
     fontWeight: '800',
-    marginTop: 6,
+    marginTop: 4,
+    letterSpacing: 0.3,
   },
-  stopChip: {
-    marginTop: 6,
-    backgroundColor: 'rgba(255,107,107,0.22)',
-    borderRadius: 8,
+  stopPill: {
+    marginTop: 4,
+    backgroundColor: 'rgba(248, 113, 113, 0.25)',
     paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingVertical: 3,
+    borderRadius: radii.full,
   },
-  stopChipText: {
-    color: '#ffd2d2',
-    fontSize: 10,
-    fontWeight: '700',
+  stopPillText: {
+    color: '#ffd0d0',
+    fontSize: 9,
+    fontWeight: '800',
   },
 });

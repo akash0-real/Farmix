@@ -12,9 +12,9 @@ import { useUser } from '../context/UserContext';
 import { t } from '../languages/uiText';
 import {
   estimateEarnings,
-  formatLastActive,
   getNearbyBuyers,
 } from '../services/buyerService';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -71,46 +71,77 @@ export default function BuyerConnectScreen({ selectedLanguage, onBack }) {
             </Pressable>
           </View>
 
-          <Text style={styles.title}>🛒 {t(selectedLanguage, 'sellerConnection')}</Text>
-          <Text style={styles.subtitle}>{t(selectedLanguage, 'sellerConnectionSubtitle')}</Text>
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>🛒 {t(selectedLanguage, 'sellerConnection')}</Text>
+            <Text style={styles.subtitle}>{t(selectedLanguage, 'sellerConnectionSubtitle')}</Text>
+          </View>
 
+          {/* Transparent Profit Calculator */}
           <View style={styles.calcCard}>
-            <Text style={styles.cardTitle}>{t(selectedLanguage, 'transparentEarnings')}</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="decimal-pad"
-              value={quantity}
-              onChangeText={setQuantity}
-              placeholder={t(selectedLanguage, 'quantityPlaceholder')}
-              placeholderTextColor="rgba(255,255,255,0.45)"
-            />
+            <View style={styles.calcHeader}>
+              <Text style={styles.cardTitle}>📊 {t(selectedLanguage, 'transparentEarnings')}</Text>
+              <View style={styles.cropBadge}>
+                <Text style={styles.cropBadgeText}>{user.crops?.[0] || 'Produce'}</Text>
+              </View>
+            </View>
+
+            <View style={styles.inputWrap}>
+              <Text style={styles.inputPrefix}>QUANTITY (QUINTAL)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="decimal-pad"
+                value={quantity}
+                onChangeText={setQuantity}
+                placeholder={t(selectedLanguage, 'quantityPlaceholder')}
+                placeholderTextColor={colors.faint}
+              />
+            </View>
 
             {selectedBuyer ? (
-              <>
-                <Text style={styles.calcLine}>
-                  {t(selectedLanguage, 'selectedBuyer')}: {selectedBuyer.name}
-                </Text>
-                <Text style={styles.calcLine}>
-                  {t(selectedLanguage, 'grossEarning')}: ₹{earnings.gross}
-                </Text>
-                <Text style={styles.calcLine}>
-                  {t(selectedLanguage, 'transportCost')}: ₹{earnings.transport}
-                </Text>
-                <Text style={styles.netLine}>
-                  {t(selectedLanguage, 'netEarning')}: ₹{earnings.net}
-                </Text>
-              </>
+              <View style={styles.calcMetricsBox}>
+                <View style={styles.calcLineRow}>
+                  <Text style={styles.calcLineLabel}>{t(selectedLanguage, 'selectedBuyer')}</Text>
+                  <Text style={styles.calcLineValue}>{selectedBuyer.name}</Text>
+                </View>
+
+                <View style={styles.calcLineRow}>
+                  <Text style={styles.calcLineLabel}>{t(selectedLanguage, 'grossEarning')}</Text>
+                  <Text style={styles.calcLineValue}>₹{earnings.gross.toLocaleString()}</Text>
+                </View>
+
+                <View style={styles.calcLineRow}>
+                  <Text style={styles.calcLineLabel}>{t(selectedLanguage, 'transportCost')}</Text>
+                  <Text style={[styles.calcLineValue, { color: colors.coral }]}>
+                    - ₹{earnings.transport.toLocaleString()}
+                  </Text>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.netProfitRow}>
+                  <View>
+                    <Text style={styles.netProfitLabel}>FINAL NET IN-HAND</Text>
+                    <Text style={styles.netEarningValue}>₹{earnings.net.toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.verifiedDealBadge}>
+                    <Text style={styles.verifiedDealText}>PROFIT OPTIMIZED</Text>
+                  </View>
+                </View>
+              </View>
             ) : null}
 
             {bestBuyer && selectedBuyer && bestBuyer.id !== selectedBuyer.id ? (
-              <Text style={styles.tipText}>
-                {t(selectedLanguage, 'bestBuyerHint', { buyer: bestBuyer.name })}
-              </Text>
+              <View style={styles.recommendationBox}>
+                <Text style={styles.tipText}>
+                  💡 {t(selectedLanguage, 'bestBuyerHint', { buyer: bestBuyer.name })}
+                </Text>
+              </View>
             ) : null}
           </View>
 
           <Text style={styles.sectionTitle}>{t(selectedLanguage, 'nearbyBuyers')}</Text>
 
+          {/* Buyer Cards */}
           {buyers.map((buyer, idx) => {
             const active = (selectedBuyer?.id || buyers[0]?.id) === buyer.id;
             const localEarnings = estimateEarnings({
@@ -123,32 +154,54 @@ export default function BuyerConnectScreen({ selectedLanguage, onBack }) {
             return (
               <Pressable
                 key={buyer.id}
-                style={[styles.buyerCard, active && styles.buyerCardActive]}
+                style={({ pressed }) => [
+                  styles.buyerCard,
+                  active && styles.buyerCardActive,
+                  pressed && { opacity: 0.9 },
+                ]}
                 onPress={() => setSelectedBuyerId(buyer.id)}
               >
                 <View style={styles.buyerTopRow}>
-                  <Text style={styles.buyerName}>
-                    {idx === 0 ? '🏆 ' : '📍 '}
-                    {buyer.name}
-                  </Text>
-                  <Text style={styles.priceTag}>₹{buyer.pricePerQuintal}/{t(selectedLanguage, 'perQuintal')}</Text>
+                  <View style={styles.buyerNameWrap}>
+                    <Text style={styles.buyerName}>
+                      {idx === 0 ? '🏆 ' : '📍 '}
+                      {buyer.name}
+                    </Text>
+                    <View style={styles.trustBadgeRow}>
+                      <Text style={styles.ratingBadge}>★ {buyer.rating}</Text>
+                      <Text style={styles.dealCount}>
+                        {buyer.successfulPurchases} {t(selectedLanguage, 'successfulDeals')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.pricePill}>
+                    <Text style={styles.priceNumber}>₹{buyer.pricePerQuintal}</Text>
+                    <Text style={styles.priceUnit}>/{t(selectedLanguage, 'perQuintal')}</Text>
+                  </View>
                 </View>
 
-                <Text style={styles.metaLine}>
-                  {t(selectedLanguage, 'distance')}: {buyer.distanceKm} km | {t(selectedLanguage, 'rating')}: {buyer.rating}⭐
-                </Text>
-                <Text style={styles.metaLine}>
-                  {t(selectedLanguage, 'successfulDeals')}: {buyer.successfulPurchases} | {t(selectedLanguage, 'lastActive')}: {formatLastActive(buyer.lastActive)}
-                </Text>
-                <Text style={styles.metaLine}>
-                  {t(selectedLanguage, 'paymentMode')}: {buyer.paymentMode}
-                </Text>
-                <Text style={styles.metaLine}>
-                  {t(selectedLanguage, 'pickupWindow')}: {buyer.pickupWindow}
-                </Text>
-                <Text style={styles.metaLine}>
-                  {t(selectedLanguage, 'estimatedNet')}: ₹{localEarnings.net}
-                </Text>
+                <View style={styles.buyerDetailsGrid}>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>{t(selectedLanguage, 'distance')}</Text>
+                    <Text style={styles.detailValue}>{buyer.distanceKm} km</Text>
+                  </View>
+
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>{t(selectedLanguage, 'paymentMode')}</Text>
+                    <Text style={styles.detailValue}>{buyer.paymentMode}</Text>
+                  </View>
+
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>{t(selectedLanguage, 'pickupWindow')}</Text>
+                    <Text style={styles.detailValue}>{buyer.pickupWindow}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.cardFooterNet}>
+                  <Text style={styles.estNetLabel}>{t(selectedLanguage, 'estimatedNet')}:</Text>
+                  <Text style={styles.estNetValue}>₹{localEarnings.net.toLocaleString()}</Text>
+                </View>
               </Pressable>
             );
           })}
@@ -161,15 +214,15 @@ export default function BuyerConnectScreen({ selectedLanguage, onBack }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: colors.ground,
   },
   background: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 15, 8, 0.88)',
+    backgroundColor: 'rgba(5, 14, 8, 0.88)',
   },
   overlayGradient: {
     position: 'absolute',
@@ -177,132 +230,281 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-    backgroundColor: 'rgba(5, 20, 10, 0.4)',
+    backgroundColor: 'rgba(5, 18, 9, 0.6)',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 30,
+    padding: spacing.xl,
+    paddingBottom: 60,
   },
   headerRow: {
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
   backBtn: {
     alignSelf: 'flex-start',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   backText: {
-    color: '#dfffe4',
+    color: colors.ink,
     fontSize: 13,
     fontWeight: '700',
+  },
+  titleSection: {
+    marginBottom: spacing.lg,
   },
   title: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#fff',
+    color: '#ffffff',
+    letterSpacing: -0.4,
   },
   subtitle: {
-    marginTop: 6,
-    marginBottom: 12,
-    color: 'rgba(255,255,255,0.76)',
-    fontSize: 14,
-    lineHeight: 20,
+    marginTop: 4,
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 18,
   },
+
+  // Calculator Card
   calcCard: {
-    backgroundColor: 'rgba(255,217,102,0.12)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(18, 36, 25, 0.92)',
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255,217,102,0.32)',
-    padding: 12,
-    marginBottom: 14,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  calcHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   cardTitle: {
-    color: '#ffe8a6',
-    fontSize: 14,
-    fontWeight: '900',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    color: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-    fontSize: 13,
-  },
-  calcLine: {
-    color: 'rgba(255,255,255,0.84)',
-    fontSize: 12,
-    marginTop: 4,
-    fontWeight: '700',
-  },
-  netLine: {
-    color: '#d4ffd9',
-    fontSize: 14,
-    marginTop: 6,
-    fontWeight: '900',
-  },
-  tipText: {
-    marginTop: 8,
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    color: '#fff',
     fontSize: 15,
     fontWeight: '800',
-    marginBottom: 8,
+    color: '#ffffff',
+  },
+  cropBadge: {
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+  },
+  cropBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.emerald,
+    textTransform: 'uppercase',
+  },
+  inputWrap: {
+    marginBottom: spacing.md,
+  },
+  inputPrefix: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.gold,
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '800',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  calcMetricsBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: radii.md,
+    padding: 12,
+  },
+  calcLineRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  calcLineLabel: {
+    fontSize: 12,
+    color: colors.muted,
+  },
+  calcLineValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginVertical: 8,
+  },
+  netProfitRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 2,
+  },
+  netProfitLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.emerald,
+    letterSpacing: 0.8,
+  },
+  netEarningValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: colors.emerald,
+    letterSpacing: -0.4,
+  },
+  verifiedDealBadge: {
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+  },
+  verifiedDealText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.emerald,
+    letterSpacing: 0.5,
+  },
+  recommendationBox: {
+    marginTop: 10,
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderRadius: radii.md,
+    padding: 10,
+  },
+  tipText: {
+    fontSize: 11,
+    color: colors.gold,
+    lineHeight: 16,
+    fontWeight: '600',
+  },
+
+  // Buyers Section
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginBottom: spacing.md,
+    letterSpacing: -0.3,
   },
   buyerCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    padding: 12,
-    marginBottom: 10,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
   buyerCardActive: {
-    borderColor: 'rgba(126,255,138,0.45)',
-    backgroundColor: 'rgba(126,255,138,0.12)',
+    borderColor: colors.emerald,
+    borderWidth: 1.5,
+    backgroundColor: 'rgba(20, 42, 29, 0.95)',
   },
   buyerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    alignItems: 'flex-start',
+    marginBottom: spacing.md,
   },
-  buyerName: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '900',
+  buyerNameWrap: {
     flex: 1,
   },
-  priceTag: {
-    color: '#d4ffd9',
-    fontSize: 12,
-    fontWeight: '900',
-    backgroundColor: 'rgba(126,255,138,0.18)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  buyerName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#ffffff',
   },
-  metaLine: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    marginBottom: 4,
-    lineHeight: 18,
+  trustBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  ratingBadge: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.gold,
+  },
+  dealCount: {
+    fontSize: 11,
+    color: colors.muted,
+  },
+  pricePill: {
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    alignItems: 'flex-end',
+  },
+  priceNumber: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: colors.gold,
+  },
+  priceUnit: {
+    fontSize: 9,
+    color: colors.gold,
     fontWeight: '700',
+  },
+  buyerDetailsGrid: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: radii.md,
+    padding: 10,
+    marginBottom: spacing.md,
+  },
+  detailItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 9,
+    color: colors.faint,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  detailValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.inkSecondary,
+    marginTop: 2,
+  },
+  cardFooterNet: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  estNetLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.muted,
+  },
+  estNetValue: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: colors.emerald,
   },
 });

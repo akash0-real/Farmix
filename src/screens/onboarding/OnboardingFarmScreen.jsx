@@ -72,6 +72,7 @@ export default function OnboardingFarmScreen({ selectedLanguage, onComplete, onB
       speakInSelectedLanguage(message);
     }, 300);
     return () => Tts.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLanguage]);
 
   useEffect(() => {
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: 4,
-    backgroundColor: '#7eff8a',
+    backgroundColor: '#34d399',
     borderRadius: 2,
   },
   progressText: {
@@ -571,17 +572,17 @@ const styles = StyleSheet.create({
   },
   completeButton: {
     flex: 2,
-    backgroundColor: '#2f8d41',
+    backgroundColor: '#1b6334',
     paddingVertical: 14,
     borderRadius: 999,
     alignItems: 'center',
-    shadowColor: '#2f8d41',
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
+    shadowColor: '#34d399',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: 'rgba(126, 255, 138, 0.25)',
+    borderColor: 'rgba(52, 211, 153, 0.4)',
   },
   completeButtonLoading: {
     opacity: 0.8,

@@ -22,12 +22,13 @@ import {
   addLessonPoints,
   addVerifiedOutcomePoints,
 } from '../services/rewardsService';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
 
 function formatDate(iso) {
   try {
-    return new Date(iso).toLocaleString();
+    return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   } catch (error) {
     return '';
   }
@@ -139,16 +140,24 @@ export default function CommunityLessonsScreen({ selectedLanguage, onBack }) {
             </Pressable>
           </View>
 
-          <Text style={styles.title}>🤝 {t(selectedLanguage, 'communityLessons')}</Text>
-          <Text style={styles.subtitle}>{t(selectedLanguage, 'communityLessonsSubtitle')}</Text>
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>🤝 {t(selectedLanguage, 'communityLessons')}</Text>
+            <Text style={styles.subtitle}>{t(selectedLanguage, 'communityLessonsSubtitle')}</Text>
+          </View>
 
+          {/* Form Card */}
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>{t(selectedLanguage, 'shareYourLesson')}</Text>
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>{t(selectedLanguage, 'shareYourLesson')}</Text>
+              <View style={styles.pointsBadge}>
+                <Text style={styles.pointsText}>+10 POINTS</Text>
+              </View>
+            </View>
 
             <TextInput
               style={styles.input}
               placeholder={t(selectedLanguage, 'lessonCropPlaceholder')}
-              placeholderTextColor="rgba(255,255,255,0.45)"
+              placeholderTextColor={colors.faint}
               value={cropLabel}
               onChangeText={value => setCrop(String(value || '').trim().toLowerCase())}
             />
@@ -156,7 +165,7 @@ export default function CommunityLessonsScreen({ selectedLanguage, onBack }) {
             <TextInput
               style={styles.input}
               placeholder={t(selectedLanguage, 'lessonLocationPlaceholder')}
-              placeholderTextColor="rgba(255,255,255,0.45)"
+              placeholderTextColor={colors.faint}
               value={locationName}
               onChangeText={setLocationName}
             />
@@ -164,7 +173,7 @@ export default function CommunityLessonsScreen({ selectedLanguage, onBack }) {
             <TextInput
               style={[styles.input, styles.multilineInput]}
               placeholder={t(selectedLanguage, 'lessonProblemPlaceholder')}
-              placeholderTextColor="rgba(255,255,255,0.45)"
+              placeholderTextColor={colors.faint}
               value={problem}
               onChangeText={setProblem}
               multiline
@@ -173,7 +182,7 @@ export default function CommunityLessonsScreen({ selectedLanguage, onBack }) {
             <TextInput
               style={[styles.input, styles.multilineInput]}
               placeholder={t(selectedLanguage, 'lessonTriedPlaceholder')}
-              placeholderTextColor="rgba(255,255,255,0.45)"
+              placeholderTextColor={colors.faint}
               value={tried}
               onChangeText={setTried}
               multiline
@@ -182,14 +191,18 @@ export default function CommunityLessonsScreen({ selectedLanguage, onBack }) {
             <TextInput
               style={[styles.input, styles.multilineInput]}
               placeholder={t(selectedLanguage, 'lessonWorkedPlaceholder')}
-              placeholderTextColor="rgba(255,255,255,0.45)"
+              placeholderTextColor={colors.faint}
               value={worked}
               onChangeText={setWorked}
               multiline
             />
 
             <Pressable
-              style={[styles.postBtn, submitting && styles.postBtnDisabled]}
+              style={({ pressed }) => [
+                styles.postBtn,
+                submitting && styles.postBtnDisabled,
+                pressed && !submitting && { opacity: 0.9 },
+              ]}
               onPress={handlePost}
               disabled={submitting}
             >
@@ -206,47 +219,80 @@ export default function CommunityLessonsScreen({ selectedLanguage, onBack }) {
           ) : lessons.length === 0 ? (
             <Text style={styles.helperText}>{t(selectedLanguage, 'lessonNoData')}</Text>
           ) : (
-            lessons.map(lesson => (
-              <View key={lesson.id} style={styles.lessonCard}>
-                <View style={styles.lessonTopRow}>
-                  <Text style={styles.lessonFarmer}>{lesson.farmerName}</Text>
-                  <Text style={styles.lessonMeta}>{formatDate(lesson.createdAt)}</Text>
+            lessons.map(lesson => {
+              const isAuthor = user.uid && lesson.authorId === user.uid;
+
+              return (
+                <View key={lesson.id} style={styles.lessonCard}>
+                  <View style={styles.lessonTopRow}>
+                    <View style={styles.authorRow}>
+                      <View style={styles.authorAvatar}>
+                        <Text style={styles.authorAvatarGlyph}>👨‍🌾</Text>
+                      </View>
+                      <View>
+                        <Text style={styles.lessonFarmer}>{lesson.farmerName}</Text>
+                        <Text style={styles.lessonMeta}>
+                          📍 {lesson.locationName} · {formatDate(lesson.createdAt)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.cropPill}>
+                      <Text style={styles.cropPillText}>{t(selectedLanguage, lesson.crop)}</Text>
+                    </View>
+                  </View>
+
+                  {/* Problem & Solution Blocks */}
+                  <View style={styles.lessonBodyBox}>
+                    <View style={styles.storyBlock}>
+                      <Text style={styles.blockLabel}>PROBLEM FACED</Text>
+                      <Text style={styles.blockText}>{lesson.problem}</Text>
+                    </View>
+
+                    <View style={styles.storyBlock}>
+                      <Text style={styles.blockLabel}>WHAT WAS TRIED</Text>
+                      <Text style={styles.blockText}>{lesson.tried}</Text>
+                    </View>
+
+                    <View style={[styles.storyBlock, styles.workedBlock]}>
+                      <Text style={[styles.blockLabel, { color: colors.emerald }]}>
+                        ✓ WHAT WORKED (PROVEN)
+                      </Text>
+                      <Text style={[styles.blockText, { color: '#ffffff' }]}>{lesson.worked}</Text>
+                    </View>
+                  </View>
+
+                  {/* Actions & Verification */}
+                  <View style={styles.lessonFooterRow}>
+                    <Pressable
+                      style={({ pressed }) => [styles.helpfulBtn, pressed && { opacity: 0.8 }]}
+                      onPress={() => handleHelpful(lesson.id)}
+                    >
+                      <Text style={styles.helpfulBtnText}>
+                        👍 {t(selectedLanguage, 'lessonHelpful')} ({lesson.helpfulCount || 0})
+                      </Text>
+                    </Pressable>
+
+                    {lesson.verifiedByAuthor ? (
+                      <View style={styles.verifiedOutcomeBadge}>
+                        <Text style={styles.verifiedOutcomeText}>
+                          ✓ {t(selectedLanguage, 'outcomeVerified')}
+                        </Text>
+                      </View>
+                    ) : isAuthor ? (
+                      <Pressable
+                        style={({ pressed }) => [styles.verifyBtn, pressed && { opacity: 0.8 }]}
+                        onPress={() => handleVerifyOutcome(lesson.id)}
+                      >
+                        <Text style={styles.verifyBtnText}>
+                          ⭐ {t(selectedLanguage, 'verifyOutcome')}
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
                 </View>
-
-                <Text style={styles.lessonTag}>
-                  🌾 {t(selectedLanguage, 'lessonCrop')}: {t(selectedLanguage, lesson.crop)}
-                </Text>
-                <Text style={styles.lessonTag}>
-                  📍 {t(selectedLanguage, 'lessonLocation')}: {lesson.locationName}
-                </Text>
-
-                <Text style={styles.lessonLabel}>{t(selectedLanguage, 'lessonProblem')}</Text>
-                <Text style={styles.lessonValue}>{lesson.problem}</Text>
-
-                <Text style={styles.lessonLabel}>{t(selectedLanguage, 'lessonTried')}</Text>
-                <Text style={styles.lessonValue}>{lesson.tried}</Text>
-
-                <Text style={styles.lessonLabel}>{t(selectedLanguage, 'lessonWorked')}</Text>
-                <Text style={styles.lessonValue}>{lesson.worked}</Text>
-
-                {lesson.verifiedOutcome ? (
-                  <Text style={styles.verifiedText}>✅ {t(selectedLanguage, 'lessonOutcomeVerified')}</Text>
-                ) : lesson.authorId === (user.uid || 'unknown') ? (
-                  <Pressable
-                    style={[styles.helpfulBtn, styles.verifyBtn]}
-                    onPress={() => handleVerifyOutcome(lesson.id)}
-                  >
-                    <Text style={styles.helpfulBtnText}>🧾 {t(selectedLanguage, 'verifyOutcome')}</Text>
-                  </Pressable>
-                ) : null}
-
-                <Pressable style={styles.helpfulBtn} onPress={() => handleHelpful(lesson.id)}>
-                  <Text style={styles.helpfulBtnText}>
-                    👍 {t(selectedLanguage, 'lessonHelpful')} ({lesson.helpfulCount || 0})
-                  </Text>
-                </Pressable>
-              </View>
-            ))
+              );
+            })
           )}
         </ScrollView>
       </ImageBackground>
@@ -257,15 +303,15 @@ export default function CommunityLessonsScreen({ selectedLanguage, onBack }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: colors.ground,
   },
   background: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 15, 8, 0.88)',
+    backgroundColor: 'rgba(5, 14, 8, 0.88)',
   },
   overlayGradient: {
     position: 'absolute',
@@ -273,163 +319,257 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-    backgroundColor: 'rgba(5, 20, 10, 0.4)',
+    backgroundColor: 'rgba(5, 18, 9, 0.6)',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: spacing.xl,
+    paddingBottom: 60,
   },
   headerRow: {
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
   backBtn: {
     alignSelf: 'flex-start',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   backText: {
-    color: '#dfffe4',
+    color: colors.ink,
     fontSize: 13,
     fontWeight: '700',
   },
+  titleSection: {
+    marginBottom: spacing.lg,
+  },
   title: {
-    fontSize: 25,
-    color: '#fff',
+    fontSize: 24,
     fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: -0.4,
   },
   subtitle: {
-    marginTop: 6,
-    color: 'rgba(255,255,255,0.76)',
-    fontSize: 14,
-    marginBottom: 12,
+    marginTop: 4,
+    fontSize: 13,
+    color: colors.muted,
   },
+
+  // Form Card
   formCard: {
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(18, 36, 25, 0.92)',
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    padding: 14,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  formHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   formTitle: {
-    color: '#fff',
-    fontWeight: '800',
     fontSize: 15,
-    marginBottom: 10,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  pointsBadge: {
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+  },
+  pointsText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.gold,
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 10,
-    color: '#fff',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    color: '#ffffff',
+    fontSize: 13,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 10,
-    fontSize: 13,
   },
   multilineInput: {
-    minHeight: 70,
+    minHeight: 52,
     textAlignVertical: 'top',
   },
   postBtn: {
-    backgroundColor: 'rgba(126,255,138,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(126,255,138,0.35)',
-    borderRadius: 10,
-    paddingVertical: 11,
+    backgroundColor: '#1b6334',
+    borderRadius: radii.full,
+    paddingVertical: 13,
     alignItems: 'center',
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.4)',
   },
   postBtnDisabled: {
-    opacity: 0.7,
+    opacity: 0.5,
   },
   postBtnText: {
-    color: '#d4ffd9',
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: '800',
-    fontSize: 13,
   },
+
+  // Lessons Feed
   listHeading: {
-    marginTop: 14,
-    marginBottom: 8,
-    color: '#fff',
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '800',
+    color: '#ffffff',
+    marginBottom: spacing.md,
+    letterSpacing: -0.3,
   },
   helperText: {
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.muted,
     fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
   lessonCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    padding: 12,
-    marginBottom: 10,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
   lessonTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.md,
+  },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  authorAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+  },
+  authorAvatarGlyph: {
+    fontSize: 16,
   },
   lessonFarmer: {
-    color: '#fff',
-    fontWeight: '800',
     fontSize: 14,
+    fontWeight: '800',
+    color: '#ffffff',
   },
   lessonMeta: {
-    color: 'rgba(255,255,255,0.58)',
     fontSize: 11,
+    color: colors.muted,
+    marginTop: 1,
   },
-  lessonTag: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
+  cropPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  cropPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.emerald,
+    textTransform: 'uppercase',
+  },
+  lessonBodyBox: {
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  storyBlock: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: radii.md,
+    padding: 10,
+  },
+  workedBlock: {
+    backgroundColor: 'rgba(52, 211, 153, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+  },
+  blockLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.faint,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     marginBottom: 4,
   },
-  lessonLabel: {
-    marginTop: 7,
-    marginBottom: 3,
-    color: '#c9ffd0',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  lessonValue: {
-    color: 'rgba(255,255,255,0.84)',
+  blockText: {
     fontSize: 13,
-    lineHeight: 19,
+    color: colors.inkSecondary,
+    lineHeight: 18,
+  },
+  lessonFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   helpfulBtn: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(126,255,138,0.16)',
-    borderColor: 'rgba(126,255,138,0.35)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radii.full,
     borderWidth: 1,
-    borderRadius: 9,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-  },
-  verifyBtn: {
-    backgroundColor: 'rgba(102,178,255,0.16)',
-    borderColor: 'rgba(102,178,255,0.35)',
-    marginBottom: 8,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   helpfulBtnText: {
-    color: '#d4ffd9',
+    fontSize: 11,
     fontWeight: '700',
-    fontSize: 12,
+    color: colors.inkSecondary,
   },
-  verifiedText: {
-    marginTop: 10,
-    marginBottom: 6,
-    color: '#9fd3ff',
-    fontSize: 12,
-    fontWeight: '700',
+  verifiedOutcomeBadge: {
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+  },
+  verifiedOutcomeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.emerald,
+    letterSpacing: 0.4,
+  },
+  verifyBtn: {
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+  },
+  verifyBtnText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.gold,
   },
 });

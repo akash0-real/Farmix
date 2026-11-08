@@ -1,7 +1,7 @@
 let localGeminiKey = 'PASTE_GEMINI_API_KEY_HERE';
 try {
   // Keep real keys in src/config/localSecrets.js (gitignored).
-  // eslint-disable-next-line global-require, import/no-unresolved
+  // eslint-disable-next-line
   const localSecrets = require('../config/localSecrets');
   localGeminiKey = localSecrets.GEMINI_API_KEY || localGeminiKey;
 } catch (error) {

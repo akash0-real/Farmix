@@ -12,6 +12,7 @@ import {
 import { GOVT_SCHEMES, SCHEME_CATEGORIES } from '../services/govtSchemes';
 import { t } from '../languages/uiText';
 import { translateGovtSchemes } from '../services/translationService';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -20,18 +21,26 @@ function SchemeCard({ scheme, selectedLanguage, categoryLabel, onApply, onCall }
   const category = SCHEME_CATEGORIES[scheme.category] || {};
 
   return (
-    <Pressable 
-      style={[styles.card, { borderLeftColor: category.color || '#7eff8a' }]}
+    <Pressable
+      style={({ pressed }) => [
+        styles.card,
+        { borderLeftColor: category.color || colors.emerald },
+        pressed && { opacity: 0.95 },
+      ]}
       onPress={() => setExpanded(!expanded)}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.schemeIcon}>{scheme.icon}</Text>
+        <View style={styles.schemeIconBox}>
+          <Text style={styles.schemeIcon}>{scheme.icon}</Text>
+        </View>
         <View style={styles.schemeInfo}>
           <Text style={styles.schemeName}>{scheme.name}</Text>
           <Text style={styles.schemeFullName}>{scheme.fullName}</Text>
         </View>
-        <View style={[styles.categoryBadge, { backgroundColor: (category.color || '#7eff8a') + '25' }]}>
-          <Text style={[styles.categoryText, { color: category.color }]}>{categoryLabel}</Text>
+        <View style={[styles.categoryBadge, { backgroundColor: (category.color || colors.emerald) + '18' }]}>
+          <Text style={[styles.categoryText, { color: category.color || colors.emerald }]}>
+            {categoryLabel}
+          </Text>
         </View>
       </View>
 
@@ -41,11 +50,14 @@ function SchemeCard({ scheme, selectedLanguage, categoryLabel, onApply, onCall }
       </View>
 
       {expanded && (
-        <>
+        <View style={styles.expandedContent}>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>✅ {t(selectedLanguage, 'schemeEligibility')}</Text>
             {scheme.eligibility.map((item, i) => (
-              <Text key={i} style={styles.listItem}>• {item}</Text>
+              <View key={i} style={styles.bulletRow}>
+                <View style={styles.bulletDot} />
+                <Text style={styles.listItem}>{item}</Text>
+              </View>
             ))}
           </View>
 
@@ -55,25 +67,27 @@ function SchemeCard({ scheme, selectedLanguage, categoryLabel, onApply, onCall }
           </View>
 
           <View style={styles.actionsRow}>
-            <Pressable 
-              style={styles.applyBtn}
+            <Pressable
+              style={({ pressed }) => [styles.applyBtn, pressed && { opacity: 0.85 }]}
               onPress={() => onApply(scheme.applyUrl)}
             >
               <Text style={styles.applyText}>🌐 {t(selectedLanguage, 'schemeApplyOnline')}</Text>
             </Pressable>
-            <Pressable 
-              style={styles.callBtn}
+            <Pressable
+              style={({ pressed }) => [styles.callBtn, pressed && { opacity: 0.85 }]}
               onPress={() => onCall(scheme.helpline)}
             >
               <Text style={styles.callText}>📞 {scheme.helpline}</Text>
             </Pressable>
           </View>
-        </>
+        </View>
       )}
 
-      <Text style={styles.expandHint}>
-        {expanded ? '▲ ' + t(selectedLanguage, 'schemeTapLess') : '▼ ' + t(selectedLanguage, 'schemeTapMore')}
-      </Text>
+      <View style={styles.expandRow}>
+        <Text style={styles.expandHint}>
+          {expanded ? '▲ ' + t(selectedLanguage, 'schemeTapLess') : '▼ ' + t(selectedLanguage, 'schemeTapMore')}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -101,11 +115,11 @@ export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
 
   const filteredSchemes = useMemo(() => {
     let schemes = translatedSchemes;
-    
+
     if (selectedCategory) {
       schemes = schemes.filter(s => s.category === selectedCategory);
     }
-    
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       schemes = schemes.filter(s =>
@@ -114,7 +128,7 @@ export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
         s.benefit.toLowerCase().includes(q)
       );
     }
-    
+
     return schemes;
   }, [searchQuery, selectedCategory, translatedSchemes]);
 
@@ -157,31 +171,33 @@ export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header */}
           <View style={styles.header}>
             <Pressable onPress={onBack} style={styles.backBtn}>
               <Text style={styles.backText}>{t(selectedLanguage, 'backArrow')}</Text>
             </Pressable>
-            <Text style={styles.title}>🏛️ {t(selectedLanguage, 'govtSchemes')}</Text>
+            <View style={styles.headerCenter}>
+              <Text style={styles.title}>🏛️ {t(selectedLanguage, 'govtSchemes')}</Text>
+              <Text style={styles.subtitle}>{t(selectedLanguage, 'govtSchemesSubtitle')}</Text>
+            </View>
             <View style={styles.headerSpacer} />
           </View>
 
-          <Text style={styles.subtitle}>{t(selectedLanguage, 'govtSchemesSubtitle')}</Text>
-
-          {/* Search Bar */}
+          {/* Search Box */}
           <View style={styles.searchBox}>
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
               style={styles.searchInput}
               placeholder={t(selectedLanguage, 'schemeSearch')}
-              placeholderTextColor="rgba(255,255,255,0.5)"
+              placeholderTextColor={colors.faint}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
           </View>
 
-          {/* Category Filters */}
-          <ScrollView 
-            horizontal 
+          {/* Category Filter Pills */}
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.categoriesScroll}
             contentContainerStyle={styles.categoriesContent}
@@ -189,68 +205,71 @@ export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
             <Pressable
               style={[
                 styles.categoryChip,
-                !selectedCategory && styles.categoryChipActive
+                !selectedCategory && styles.categoryChipActive,
               ]}
               onPress={() => setSelectedCategory(null)}
             >
-              <Text style={[
-                styles.categoryChipText,
-                !selectedCategory && styles.categoryChipTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  !selectedCategory && styles.categoryChipTextActive,
+                ]}
+              >
                 {t(selectedLanguage, 'schemeAll')}
               </Text>
             </Pressable>
-            {categories.map(([key, { label, color }]) => (
-              <Pressable
-                key={key}
-                style={[
-                  styles.categoryChip,
-                  selectedCategory === key && { backgroundColor: color + '30', borderColor: color }
-                ]}
-                onPress={() => setSelectedCategory(selectedCategory === key ? null : key)}
-              >
-                <Text style={[
-                  styles.categoryChipText,
-                  selectedCategory === key && { color }
-                ]}>
-                  {categoryLabelKeyMap[key] ? t(selectedLanguage, categoryLabelKeyMap[key]) : label}
-                </Text>
-              </Pressable>
-            ))}
+
+            {categories.map(([key, cat]) => {
+              const labelKey = categoryLabelKeyMap[key] || 'schemeAll';
+              const label = t(selectedLanguage, labelKey);
+              const isActive = selectedCategory === key;
+
+              return (
+                <Pressable
+                  key={key}
+                  style={[
+                    styles.categoryChip,
+                    isActive && { backgroundColor: (cat.color || colors.emerald) + '25', borderColor: cat.color },
+                  ]}
+                  onPress={() => setSelectedCategory(isActive ? null : key)}
+                >
+                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      isActive && { color: cat.color || colors.emerald, fontWeight: '800' },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
 
           {/* Schemes Count */}
-          <Text style={styles.countText}>
-            {t(selectedLanguage, 'schemeShowing', { count: filteredSchemes.length })}
-          </Text>
-
-          {/* Scheme Cards */}
-          {filteredSchemes.map(scheme => (
-            <SchemeCard
-              key={scheme.id}
-              scheme={scheme}
-              selectedLanguage={selectedLanguage}
-              categoryLabel={
-                categoryLabelKeyMap[scheme.category]
-                  ? t(selectedLanguage, categoryLabelKeyMap[scheme.category])
-                  : scheme.category
-              }
-              onApply={handleApply}
-              onCall={handleCall}
-            />
-          ))}
-
-          {filteredSchemes.length === 0 && (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>{t(selectedLanguage, 'schemeNoResults')}</Text>
-            </View>
-          )}
-
-          {/* Info Card */}
-          <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>💡 {t(selectedLanguage, 'schemeTip')}</Text>
-            <Text style={styles.infoText}>{t(selectedLanguage, 'schemeTipText')}</Text>
+          <View style={styles.countRow}>
+            <Text style={styles.countText}>
+              {filteredSchemes.length} {t(selectedLanguage, 'govtSchemes')} Available
+            </Text>
           </View>
+
+          {/* Schemes List */}
+          {filteredSchemes.map((scheme) => {
+            const labelKey = categoryLabelKeyMap[scheme.category] || 'schemeAll';
+            const categoryLabel = t(selectedLanguage, labelKey);
+
+            return (
+              <SchemeCard
+                key={scheme.id}
+                scheme={scheme}
+                selectedLanguage={selectedLanguage}
+                categoryLabel={categoryLabel}
+                onApply={handleApply}
+                onCall={handleCall}
+              />
+            );
+          })}
         </ScrollView>
       </ImageBackground>
     </View>
@@ -260,15 +279,15 @@ export default function GovtSchemesScreen({ selectedLanguage, onBack }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: colors.ground,
   },
   background: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 15, 8, 0.88)',
+    backgroundColor: 'rgba(5, 14, 8, 0.88)',
   },
   overlayGradient: {
     position: 'absolute',
@@ -276,240 +295,271 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-    backgroundColor: 'rgba(5, 20, 10, 0.4)',
+    backgroundColor: 'rgba(5, 18, 9, 0.6)',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    padding: 18,
-    paddingBottom: 40,
+    padding: spacing.xl,
+    paddingBottom: 60,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: spacing.md,
     marginTop: 4,
   },
   backBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   backText: {
-    color: '#dfffe4',
+    color: colors.ink,
     fontSize: 13,
     fontWeight: '700',
   },
-  headerSpacer: {
-    width: 66,
+  headerCenter: {
+    alignItems: 'center',
   },
   title: {
-    fontSize: 21,
+    fontSize: 20,
     fontWeight: '900',
     color: '#ffffff',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: 'rgba(255,255,255,0.72)',
-    marginBottom: 14,
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 2,
   },
+  headerSpacer: {
+    width: 44,
+  },
+
+  // Search
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radii.full,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     paddingHorizontal: 14,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   searchIcon: {
-    fontSize: 16,
-    marginRight: 10,
+    fontSize: 14,
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 12,
-    color: '#fff',
-    fontSize: 14,
+    color: '#ffffff',
+    fontSize: 13,
+    paddingVertical: 10,
   },
+
+  // Category Filters
   categoriesScroll: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   categoriesContent: {
     gap: 8,
+    paddingVertical: 4,
   },
   categoryChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radii.full,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    gap: 6,
   },
   categoryChipActive: {
-    backgroundColor: 'rgba(126,255,138,0.2)',
-    borderColor: '#7eff8a',
+    backgroundColor: 'rgba(52, 211, 153, 0.18)',
+    borderColor: colors.emerald,
+  },
+  categoryIcon: {
+    fontSize: 12,
   },
   categoryChipText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.inkSecondary,
   },
   categoryChipTextActive: {
-    color: '#7eff8a',
+    color: colors.emerald,
+    fontWeight: '800',
+  },
+  countRow: {
+    marginBottom: spacing.md,
   },
   countText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
-    marginBottom: 12,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
+
+  // Scheme Card
   card: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(18, 36, 25, 0.88)',
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     borderLeftWidth: 4,
-    padding: 14,
-    marginBottom: 12,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
   cardHeader: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: spacing.md,
+  },
+  schemeIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
   },
   schemeIcon: {
-    fontSize: 28,
-    marginRight: 12,
+    fontSize: 18,
   },
   schemeInfo: {
     flex: 1,
   },
   schemeName: {
-    color: '#fff',
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '800',
+    color: '#ffffff',
   },
   schemeFullName: {
-    color: 'rgba(255,255,255,0.6)',
     fontSize: 11,
+    color: colors.muted,
     marginTop: 2,
   },
   categoryBadge: {
-    paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
   },
   categoryText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
+    letterSpacing: 0.5,
   },
   benefitBox: {
-    backgroundColor: 'rgba(126,255,138,0.1)',
-    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: radii.md,
     padding: 10,
-    marginBottom: 8,
-  },
-  benefitLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 10,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  benefitText: {
-    color: '#7eff8a',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  section: {
-    marginTop: 10,
-  },
-  sectionTitle: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '800',
     marginBottom: 6,
   },
-  listItem: {
-    color: 'rgba(255,255,255,0.8)',
+  benefitLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.emerald,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 3,
+  },
+  benefitText: {
+    fontSize: 13,
+    color: colors.inkSecondary,
+    lineHeight: 18,
+  },
+
+  // Expanded
+  expandedContent: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  section: {
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
     fontSize: 12,
-    lineHeight: 20,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginBottom: 6,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginBottom: 4,
+  },
+  bulletDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.emerald,
+    marginTop: 6,
+  },
+  listItem: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.inkSecondary,
+    lineHeight: 17,
   },
   docsText: {
-    color: 'rgba(255,255,255,0.7)',
     fontSize: 12,
-    lineHeight: 18,
+    color: colors.muted,
+    lineHeight: 17,
   },
   actionsRow: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 12,
+    marginTop: spacing.sm,
   },
   applyBtn: {
     flex: 1,
-    backgroundColor: '#2f8d41',
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: '#1b6334',
+    borderRadius: radii.md,
+    paddingVertical: 10,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.35)',
   },
   applyText: {
-    color: '#fff',
-    fontSize: 13,
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: '800',
   },
   callBtn: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderRadius: radii.md,
+    paddingVertical: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(251, 191, 36, 0.3)',
   },
   callText: {
-    color: '#fff',
-    fontSize: 13,
+    color: colors.gold,
+    fontSize: 12,
     fontWeight: '800',
+  },
+  expandRow: {
+    alignItems: 'center',
+    marginTop: 4,
   },
   expandHint: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  emptyCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 14,
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 14,
-  },
-  infoCard: {
-    backgroundColor: 'rgba(77,171,247,0.1)',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(77,171,247,0.3)',
-    marginTop: 8,
-  },
-  infoTitle: {
-    color: '#4dabf7',
-    fontSize: 13,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  infoText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 10,
+    color: colors.muted,
+    fontWeight: '700',
   },
 });

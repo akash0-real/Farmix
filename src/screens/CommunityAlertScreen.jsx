@@ -17,6 +17,7 @@ import {
 import { t } from '../languages/uiText';
 import { getTtsCode } from '../languages/languageConfig';
 import { translateAlerts } from '../services/translationService';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -140,7 +141,6 @@ export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
 
   const groupedAlerts = useMemo(() => groupAlerts(alerts), [alerts]);
 
-  // Translate alerts when language changes or alerts update
   useEffect(() => {
     const translateContent = async () => {
       if (groupedAlerts.length > 0) {
@@ -214,8 +214,10 @@ export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
             </Pressable>
           </View>
 
-          <Text style={styles.title}>🚨 {t(selectedLanguage, 'communityAlerts')}</Text>
-          <Text style={styles.subtitle}>{t(selectedLanguage, 'severityBasedAlerts')}</Text>
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>🚨 {t(selectedLanguage, 'communityAlerts')}</Text>
+            <Text style={styles.subtitle}>{t(selectedLanguage, 'severityBasedAlerts')}</Text>
+          </View>
 
           {(translatedAlerts.length > 0 ? translatedAlerts : groupedAlerts).map(alert => {
             const severity = String(alert.severity || '').toLowerCase();
@@ -229,22 +231,38 @@ export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
 
             const checklist = getActionChecklist(selectedLanguage, severity);
 
+            const isHigh = severity === 'high';
+            const isMod = severity === 'moderate';
+            const accentColor = isHigh ? colors.coral : isMod ? colors.gold : colors.emerald;
+
             return (
               <View
                 key={alert.id}
                 style={[
                   styles.card,
-                  severity === 'high'
-                    ? styles.high
-                    : severity === 'moderate'
-                    ? styles.moderate
-                    : styles.low,
+                  {
+                    borderColor: isHigh
+                      ? 'rgba(248, 113, 113, 0.4)'
+                      : isMod
+                      ? 'rgba(251, 191, 36, 0.35)'
+                      : 'rgba(52, 211, 153, 0.3)',
+                  },
                 ]}
               >
+                {/* Outbreak Card Top */}
                 <View style={styles.cardTop}>
-                  <Text style={styles.cardTitle}>{alert.title}</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.cardTitle}>{alert.title}</Text>
+                    <View style={[styles.radiusPill, { borderColor: accentColor + '40' }]}>
+                      <Text style={[styles.radiusText, { color: accentColor }]}>
+                        {alert.radiusKm} KM RADIUS
+                      </Text>
+                    </View>
+                  </View>
+
                   <View style={styles.badgeRow}>
                     <View style={styles.trendBadge}>
+                      <View style={[styles.trendDot, { backgroundColor: accentColor }]} />
                       <Text style={styles.trendText}>{t(selectedLanguage, trendTextKey)}</Text>
                     </View>
                     <View style={styles.reportsBadge}>
@@ -256,42 +274,61 @@ export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
                 </View>
 
                 <Text style={styles.cardMessage}>{alert.message}</Text>
-                <Text style={styles.meta}>
-                  {t(selectedLanguage, 'severity')}: {String(alert.severity).toUpperCase()} | {t(selectedLanguage, 'radius')}: {alert.radiusKm} km
-                </Text>
-                <Text style={styles.meta}>
-                  {t(selectedLanguage, 'area')}: {alert.locationName} | {new Date(alert.createdAt).toLocaleString()}
-                </Text>
 
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLocation}>📍 {alert.locationName}</Text>
+                  <Text style={styles.metaTime}>
+                    {new Date(alert.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+
+                {/* Immediate Action Checklist */}
                 <View style={styles.checklistCard}>
-                  <Text style={styles.checklistTitle}>{t(selectedLanguage, 'alertDoNow')}</Text>
+                  <Text style={styles.checklistTitle}>⚡ {t(selectedLanguage, 'alertDoNow')}</Text>
                   {checklist.map((step, idx) => (
-                    <Text key={`${alert.id}-step-${idx}`} style={styles.checklistItem}>
-                      • {step}
-                    </Text>
+                    <View key={`${alert.id}-step-${idx}`} style={styles.checklistItemRow}>
+                      <View style={[styles.stepBullet, { backgroundColor: accentColor }]} />
+                      <Text style={styles.checklistItemText}>{step}</Text>
+                    </View>
                   ))}
                 </View>
 
-                <View style={styles.actionsRow}>
-                  <Pressable style={styles.actionBtn} onPress={() => speakAlert(alert)}>
+                {/* Action Buttons Row */}
+                <View style={styles.actionsGrid}>
+                  <Pressable
+                    style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.8 }]}
+                    onPress={() => speakAlert(alert)}
+                  >
                     <Text style={styles.actionText}>🔊 {t(selectedLanguage, 'alertHear')}</Text>
                   </Pressable>
-                  <Pressable style={styles.actionBtn} onPress={() => shareAlert(alert)}>
+
+                  <Pressable
+                    style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.8 }]}
+                    onPress={() => shareAlert(alert)}
+                  >
                     <Text style={styles.actionText}>📤 {t(selectedLanguage, 'alertShare')}</Text>
                   </Pressable>
-                </View>
 
-                <View style={styles.actionsRow}>
                   <Pressable
-                    style={[styles.actionBtn, isChecked && styles.checkedBtn]}
+                    style={({ pressed }) => [
+                      styles.actionBtn,
+                      isChecked && styles.checkedBtn,
+                      pressed && { opacity: 0.8 },
+                    ]}
                     onPress={() => markChecked(alert.id)}
                   >
-                    <Text style={styles.actionText}>
-                      {isChecked ? '✅' : '☑️'} {t(selectedLanguage, 'alertMarkChecked')}
+                    <Text style={[styles.actionText, isChecked && { color: colors.emerald }]}>
+                      {isChecked ? '✅ ' : '☑️ '}{t(selectedLanguage, 'alertMarkChecked')}
                     </Text>
                   </Pressable>
-                  <Pressable style={styles.actionBtn} onPress={callExpert}>
-                    <Text style={styles.actionText}>📞 {t(selectedLanguage, 'alertCallExpert')}</Text>
+
+                  <Pressable
+                    style={({ pressed }) => [styles.actionBtn, styles.callBtn, pressed && { opacity: 0.8 }]}
+                    onPress={callExpert}
+                  >
+                    <Text style={[styles.actionText, { color: colors.gold }]}>
+                      📞 {t(selectedLanguage, 'alertCallExpert')}
+                    </Text>
                   </Pressable>
                 </View>
               </View>
@@ -306,15 +343,15 @@ export default function CommunityAlertScreen({ selectedLanguage, onBack }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: colors.ground,
   },
   background: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 15, 8, 0.88)',
+    backgroundColor: 'rgba(5, 14, 8, 0.88)',
   },
   overlayGradient: {
     position: 'absolute',
@@ -322,150 +359,205 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-    backgroundColor: 'rgba(5, 20, 10, 0.4)',
+    backgroundColor: 'rgba(5, 18, 9, 0.6)',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: spacing.xl,
+    paddingBottom: 60,
   },
   headerRow: {
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
   backBtn: {
     alignSelf: 'flex-start',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   backText: {
-    color: '#dfffe4',
+    color: colors.ink,
     fontSize: 13,
     fontWeight: '700',
   },
+  titleSection: {
+    marginBottom: spacing.lg,
+  },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
-    color: '#fff',
+    color: '#ffffff',
+    letterSpacing: -0.4,
   },
   subtitle: {
-    marginTop: 6,
-    marginBottom: 12,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    marginTop: 4,
+    fontSize: 13,
+    color: colors.muted,
   },
   card: {
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    backgroundColor: 'rgba(18, 36, 25, 0.88)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  high: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#ff6b6b',
-  },
-  moderate: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#ffd966',
-  },
-  low: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#7eff8a',
   },
   cardTop: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 6,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#fff',
-    marginBottom: 8,
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: -0.2,
+  },
+  radiusPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+    borderWidth: 1,
+  },
+  radiusText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  trendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  trendDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  trendText: {
+    color: colors.inkSecondary,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  reportsBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  reportsText: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  cardMessage: {
+    fontSize: 13,
+    color: colors.inkSecondary,
+    lineHeight: 19,
+    marginBottom: spacing.sm,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    marginBottom: spacing.md,
+  },
+  metaLocation: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  metaTime: {
+    color: colors.faint,
+    fontSize: 11,
+  },
+
+  // Immediate Action Checklist
+  checklistCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: radii.md,
+    padding: 12,
+    marginBottom: spacing.md,
+  },
+  checklistTitle: {
+    color: colors.ink,
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 8,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  checklistItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 6,
+  },
+  stepBullet: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    marginTop: 6,
+  },
+  checklistItemText: {
+    flex: 1,
+    color: colors.inkSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  // Actions Grid
+  actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  trendBadge: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 8,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-  },
-  trendText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  reportsBadge: {
-    backgroundColor: 'rgba(126,255,138,0.15)',
-    borderRadius: 8,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-  },
-  reportsText: {
-    color: '#dfffe4',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  cardMessage: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: 'rgba(255,255,255,0.86)',
-    marginBottom: 6,
-  },
-  meta: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.62)',
-    marginBottom: 3,
-  },
-  checklistCard: {
-    marginTop: 10,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    padding: 10,
-  },
-  checklistTitle: {
-    color: '#ffe9a6',
-    fontSize: 12,
-    fontWeight: '900',
-    marginBottom: 6,
-  },
-  checklistItem: {
-    color: 'rgba(255,255,255,0.82)',
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 2,
-  },
-  actionsRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    gap: 8,
-  },
   actionBtn: {
     flex: 1,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingVertical: 9,
-    paddingHorizontal: 10,
+    minWidth: '46%',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkedBtn: {
-    backgroundColor: 'rgba(126,255,138,0.2)',
-  },
   actionText: {
-    color: '#fff',
+    color: colors.ink,
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
+  },
+  checkedBtn: {
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+  },
+  callBtn: {
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderColor: 'rgba(251, 191, 36, 0.25)',
   },
 });

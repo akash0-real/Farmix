@@ -8,23 +8,25 @@ import {
   View,
 } from 'react-native';
 import { t } from '../languages/uiText';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
 
 export default function PreLoginScreen({ selectedLanguage, onGetStarted, onHaveAccount }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(60)).current;
+  const slideAnim = useRef(new Animated.Value(40)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 1000,
+        duration: 900,
         useNativeDriver: true,
       }),
-      Animated.timing(slideAnim, {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        duration: 900,
+        friction: 8,
+        tension: 45,
         useNativeDriver: true,
       }),
     ]).start();
@@ -33,43 +35,39 @@ export default function PreLoginScreen({ selectedLanguage, onGetStarted, onHaveA
   return (
     <View style={styles.container}>
       <ImageBackground source={farmImage} style={styles.hero} resizeMode="cover">
-        {/* Overlays */}
+        {/* Cinematic gradient overlays */}
         <View style={styles.overlayTop} />
         <View style={styles.overlayBottom} />
-        <View style={styles.overlayDepth} />
 
         {/* Top bar */}
         <View style={styles.topBar}>
           <View style={styles.logoRow}>
             <View style={styles.logoBox}>
-              <Text style={styles.logoLetter}>F</Text>
+              <Text style={styles.logoGlyph}>🌿</Text>
             </View>
-            <Text style={styles.logoName}>Farmix</Text>
+            <View>
+              <Text style={styles.logoName}>Farmix</Text>
+              <Text style={styles.logoTagline}>AI Agriculture</Text>
+            </View>
           </View>
-          <View style={styles.helpBadge}>
-            <Text style={styles.helpText}>?</Text>
+
+          <View style={styles.floatingTag}>
+            <Text style={styles.floatingTagIcon}>🎙️</Text>
+            <Text style={styles.floatingTagText}>{t(selectedLanguage, 'voiceGuidedAssistant')}</Text>
           </View>
         </View>
 
-        {/* AI tag top right */}
-        <View style={styles.floatingTag}>
-          <Text style={styles.floatingTagIcon}>🎤</Text>
-          <Text style={styles.floatingTagText}>{t(selectedLanguage, 'voiceGuidedAssistant')}</Text>
-        </View>
-
-        {/* Hero text — takes remaining space above sheet */}
+        {/* Hero text */}
         <View style={styles.heroCenter}>
           <View style={styles.liveTag}>
             <View style={styles.liveDot} />
             <Text style={styles.liveText}>{t(selectedLanguage, 'aiPowered')}</Text>
           </View>
           <Text style={styles.heroTitle}>{t(selectedLanguage, 'heroTitle')}</Text>
-          <Text style={styles.heroSub}>
-            {t(selectedLanguage, 'heroSub')}
-          </Text>
+          <Text style={styles.heroSub}>{t(selectedLanguage, 'heroSub')}</Text>
         </View>
 
-        {/* Glass bottom sheet — fixed height */}
+        {/* Glass bottom sheet */}
         <Animated.View
           style={[
             styles.glassSheet,
@@ -81,17 +79,12 @@ export default function PreLoginScreen({ selectedLanguage, onGetStarted, onHaveA
 
             <View style={styles.trustRow}>
               <View style={styles.trustDot} />
-              <Text style={styles.trustText}>
-                {t(selectedLanguage, 'trustedBy')}
-              </Text>
+              <Text style={styles.trustText}>{t(selectedLanguage, 'trustedBy')}</Text>
               <View style={styles.trustDot} />
             </View>
 
-            <Text style={styles.title}>{t(selectedLanguage, 'welcomeToFarmix')} 🌿</Text>
-
-            <Text style={styles.subtitle}>
-              {t(selectedLanguage, 'noTypingNeeded')}
-            </Text>
+            <Text style={styles.title}>{t(selectedLanguage, 'welcomeToFarmix')} 🌱</Text>
+            <Text style={styles.subtitle}>{t(selectedLanguage, 'noTypingNeeded')}</Text>
 
             <View style={styles.pillRow}>
               {[t(selectedLanguage, 'pillLanguages'), t(selectedLanguage, 'pillOffline'), t(selectedLanguage, 'pillAI')].map(
@@ -106,17 +99,18 @@ export default function PreLoginScreen({ selectedLanguage, onGetStarted, onHaveA
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
-                pressed && { opacity: 0.88 },
+                pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
               ]}
               onPress={onGetStarted}
             >
               <Text style={styles.primaryButtonText}>{t(selectedLanguage, 'getStarted')}</Text>
+              <Text style={styles.buttonArrow}>→</Text>
             </Pressable>
 
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
-                pressed && { opacity: 0.75 },
+                pressed && { opacity: 0.8 },
               ]}
               onPress={onHaveAccount}
             >
@@ -142,266 +136,247 @@ export default function PreLoginScreen({ selectedLanguage, onGetStarted, onHaveA
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.ground,
   },
   hero: {
     flex: 1,
-    // Fallback background if image fails to load
-    backgroundColor: '#0d3320',
+    backgroundColor: '#0a1d12',
   },
-
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 20, 10, 0.2)',
+    backgroundColor: 'rgba(4, 14, 8, 0.45)',
   },
   overlayBottom: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 25, 12, 0.16)',
-  },
-  overlayDepth: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '40%',
-    backgroundColor: 'rgba(5, 25, 12, 0.44)',
+    height: '60%',
+    backgroundColor: 'rgba(4, 14, 8, 0.75)',
   },
-
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 18,
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.md,
   },
   logoBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#2d8a3f',
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoLetter: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '900',
+  logoGlyph: {
+    fontSize: 20,
   },
   logoName: {
-    color: '#fff',
-    fontSize: 22,
+    color: '#ffffff',
+    fontSize: 20,
     fontWeight: '900',
+    letterSpacing: -0.3,
   },
-  helpBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  helpText: {
-    color: '#fff',
-    fontSize: 15,
+  logoTagline: {
+    color: colors.emerald,
+    fontSize: 10,
     fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-
   floatingTag: {
-    position: 'absolute',
-    top: 68,
-    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 5,
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.full,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
-  floatingTagIcon: { fontSize: 12 },
+  floatingTagIcon: {
+    fontSize: 13,
+  },
   floatingTagText: {
-    color: '#fff',
+    color: colors.inkSecondary,
     fontSize: 11,
     fontWeight: '700',
   },
-
-  // Hero center — sits between topbar and glass sheet
   heroCenter: {
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingHorizontal: spacing.xxl,
+    paddingBottom: 28,
   },
   liveTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(45,138,63,0.35)',
-    borderRadius: 20,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    borderRadius: radii.full,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: 'rgba(150,255,150,0.3)',
-    marginBottom: 14,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+    marginBottom: spacing.md,
   },
   liveDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#7eff8a',
+    backgroundColor: colors.emerald,
   },
   liveText: {
-    color: '#7eff8a',
+    color: colors.emerald,
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
   },
   heroTitle: {
-    color: '#fff',
-    fontSize: 44,
+    color: '#ffffff',
+    fontSize: 40,
     fontWeight: '900',
     textAlign: 'center',
-    lineHeight: 52,
-    marginBottom: 10,
-    textShadowColor: 'rgba(0,0,0,0.4)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    lineHeight: 46,
+    letterSpacing: -0.8,
+    marginBottom: spacing.sm,
   },
   heroSub: {
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.inkSecondary,
     fontSize: 15,
     textAlign: 'center',
+    lineHeight: 22,
   },
-
-  // ── GLASS SHEET ─────────────────────────────────
   glassSheet: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: radii.xl + 6,
+    borderTopRightRadius: radii.xl + 6,
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
     borderBottomWidth: 0,
+    backgroundColor: 'rgba(10, 24, 15, 0.94)',
   },
   glassInner: {
-    backgroundColor: 'rgba(8, 28, 15, 0.78)',
-    paddingHorizontal: 22,
+    paddingHorizontal: spacing.xxl,
     paddingTop: 12,
-    paddingBottom: 24,
+    paddingBottom: spacing.xxl,
   },
-
   handle: {
-    width: 40,
+    width: 36,
     height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   trustRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: spacing.sm,
   },
   trustDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#7eff8a',
+    backgroundColor: colors.emerald,
   },
   trustText: {
-    color: '#7eff8a',
-    fontSize: 9,
+    color: colors.emerald,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   title: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: '900',
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '800',
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: 14,
+    color: colors.muted,
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 21,
-    marginBottom: 14,
-    paddingHorizontal: 10,
+    lineHeight: 19,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
-  highlight: {
-    color: '#7eff8a',
-    fontWeight: '800',
-  },
-
   pillRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 18,
+    marginBottom: spacing.lg,
     flexWrap: 'wrap',
   },
   pill: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 20,
-    paddingHorizontal: 11,
-    paddingVertical: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radii.full,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   pillText: {
-    color: 'rgba(255,255,255,0.85)',
+    color: colors.inkSecondary,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
   },
-
   primaryButton: {
-    backgroundColor: '#2f8d41',
+    backgroundColor: '#1b6334',
     paddingVertical: 15,
-    borderRadius: 999,
+    borderRadius: radii.full,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    shadowColor: '#2f8d41',
-    shadowOpacity: 0.55,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(150,255,150,0.25)',
+    borderColor: 'rgba(52, 211, 153, 0.4)',
+    shadowColor: colors.emerald,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   primaryButtonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
-
-  secondaryButton: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingVertical: 14,
-    borderRadius: 999,
-    alignItems: 'center',
-    marginBottom: 18,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  secondaryButtonText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 15,
+  buttonArrow: {
+    color: colors.emerald,
+    fontSize: 18,
     fontWeight: '700',
   },
-
+  secondaryButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: 13,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  secondaryButtonText: {
+    color: colors.inkSecondary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -409,14 +384,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   footerText: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
+    color: colors.faint,
+    fontSize: 11,
     fontWeight: '600',
   },
   footerDot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });

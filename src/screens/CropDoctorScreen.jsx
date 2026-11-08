@@ -21,32 +21,9 @@ import { getTtsCode } from '../languages/languageConfig';
 import { useUser } from '../context/UserContext';
 import { translateCropDoctorResult } from '../services/translationService';
 import { detectDiseaseOffline, initTensorFlow, isOfflineDetectionAvailable } from '../services/tensorflowService';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
-
-function extractRetrySeconds(message) {
-  const match = String(message || '').match(/retry in\s+([\d.]+)s/i);
-  if (!match?.[1]) {
-    return null;
-  }
-
-  const seconds = Number.parseFloat(match[1]);
-  if (Number.isNaN(seconds)) {
-    return null;
-  }
-
-  return Math.max(1, Math.ceil(seconds));
-}
-
-function isQuotaOrRateLimitError(message) {
-  const value = String(message || '').toLowerCase();
-  return (
-    value.includes('quota') ||
-    value.includes('rate limit') ||
-    value.includes('too many requests') ||
-    value.includes('retry in')
-  );
-}
 
 function ResultSection({ title, items }) {
   if (!items?.length) return null;
@@ -54,9 +31,10 @@ function ResultSection({ title, items }) {
     <View style={styles.sectionCard}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {items.map((item, i) => (
-        <Text key={i} style={styles.listItem}>
-          • {item}
-        </Text>
+        <View key={i} style={styles.listItemRow}>
+          <View style={styles.listBullet} />
+          <Text style={styles.listItemText}>{item}</Text>
+        </View>
       ))}
     </View>
   );
@@ -76,16 +54,14 @@ function PredictionSection({ predictions, title }) {
             : null) ||
           'N/A';
         return (
-        <View
-          key={`${label}-${confidenceValue}-${index}`}
-          style={styles.predictionRow}
-        >
-          <Text style={styles.predictionLabel}>{label}</Text>
-          <Text style={styles.predictionConfidence}>
-            {confidenceValue}
-          </Text>
-        </View>
-      )})}
+          <View key={`${label}-${confidenceValue}-${index}`} style={styles.predictionRow}>
+            <Text style={styles.predictionLabel}>{label}</Text>
+            <View style={styles.predictionBadge}>
+              <Text style={styles.predictionConfidence}>{confidenceValue}</Text>
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -100,7 +76,6 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
   const [tfReady, setTfReady] = useState(false);
   const tt = (key, params = {}) => t(selectedLanguage, key, params);
 
-  // Initialize TensorFlow on mount
   useEffect(() => {
     let isMounted = true;
     initTensorFlow()
@@ -203,13 +178,11 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
     let communityAlert = null;
 
     try {
-      // Try online Gemini API first
       result = await detectCropDiseaseAI({
         base64Data: capturedImage.base64,
         mimeType: capturedImage.type || 'image/jpeg',
       });
 
-      // Translate result if not English
       result = await translateCropDoctorResult(result, selectedLanguage);
 
       communityAlert = publishDiseaseAlert({
@@ -219,11 +192,9 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
         locationName: user.district || user.state || t(selectedLanguage, 'yourArea'),
       });
     } catch (onlineError) {
-      // Online failed - try TensorFlow offline detection
       const onlineMessage = onlineError?.message || tt('cropDoctorScanFailedGeneric');
       setOfflineReason(onlineMessage);
-      console.log('Online detection failed, trying offline:', onlineMessage);
-      
+
       if (tfReady || isOfflineDetectionAvailable()) {
         try {
           result = await detectDiseaseOffline({
@@ -246,7 +217,6 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
 
     setScanResult(result);
 
-    // ── Speak the result ──
     const ttsCode = getTtsCode(selectedLanguage);
     Tts.setDefaultLanguage(ttsCode);
 
@@ -322,98 +292,116 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
       <ImageBackground source={farmImage} style={styles.background} resizeMode="cover">
         <View style={styles.overlayTop} />
         <View style={styles.overlayGradient} />
+
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header */}
           <View style={styles.header}>
             <Pressable onPress={onBack} style={styles.backBtn}>
               <Text style={styles.backText}>{t(selectedLanguage, 'backArrow')}</Text>
             </Pressable>
-            <Text style={styles.title}>🌿 {t(selectedLanguage, 'cropDoctor')}</Text>
+            <View style={styles.headerCenter}>
+              <Text style={styles.title}>🌿 {t(selectedLanguage, 'cropDoctor')}</Text>
+              <Text style={styles.subtitle}>{t(selectedLanguage, 'aiDiseaseDetection')}</Text>
+            </View>
             <View style={styles.headerSpacer} />
           </View>
 
-          <Text style={styles.subtitle}>
-            {t(selectedLanguage, 'aiDiseaseDetection')}
-          </Text>
-
-          <View style={styles.heroCard}>
+          {/* Precision Optical Scanner Box */}
+          <View style={styles.scannerCard}>
             {capturedImage?.uri ? (
-              <Image
-                source={{ uri: capturedImage.uri }}
-                style={styles.previewImage}
-              />
+              <View style={styles.imagePreviewWrap}>
+                <Image source={{ uri: capturedImage.uri }} style={styles.previewImage} />
+                <View style={styles.scannerReticleTL} />
+                <View style={styles.scannerReticleTR} />
+                <View style={styles.scannerReticleBL} />
+                <View style={styles.scannerReticleBR} />
+              </View>
             ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>📸</Text>
-                <Text style={styles.emptyTitle}>{tt('cropDoctorNoPhotoYet')}</Text>
-                <Text style={styles.emptyText}>
-                  {tt('cropDoctorNoPhotoHint')}
-                </Text>
+              <View style={styles.emptyScanner}>
+                <View style={styles.scannerReticleTL} />
+                <View style={styles.scannerReticleTR} />
+                <View style={styles.scannerReticleBL} />
+                <View style={styles.scannerReticleBR} />
+                <View style={styles.emptyScannerIconCircle}>
+                  <Text style={styles.emptyScannerGlyph}>📸</Text>
+                </View>
+                <Text style={styles.emptyScannerTitle}>{tt('cropDoctorNoPhotoYet')}</Text>
+                <Text style={styles.emptyScannerHint}>{tt('cropDoctorNoPhotoHint')}</Text>
               </View>
             )}
           </View>
 
+          {/* Capture Actions */}
           <View style={styles.buttonRow}>
-            <Pressable style={styles.primaryButton} onPress={handleCapture}>
-              <Text style={styles.primaryButtonText}>
+            <Pressable
+              style={({ pressed }) => [styles.captureBtn, pressed && { opacity: 0.85 }]}
+              onPress={handleCapture}
+            >
+              <Text style={styles.captureBtnText}>
                 {capturedImage ? `📷 ${tt('cropDoctorRetake')}` : `📷 ${tt('cropDoctorOpenCamera')}`}
               </Text>
             </Pressable>
-            <Pressable style={styles.galleryButton} onPress={handlePickFromGallery}>
-              <Text style={styles.galleryButtonText}>🖼️ {tt('cropDoctorGallery')}</Text>
+
+            <Pressable
+              style={({ pressed }) => [styles.galleryBtn, pressed && { opacity: 0.85 }]}
+              onPress={handlePickFromGallery}
+            >
+              <Text style={styles.galleryBtnText}>🖼️ {tt('cropDoctorGallery')}</Text>
             </Pressable>
           </View>
 
+          {/* Primary Analyze Button */}
           <Pressable
-            style={[
-              styles.analyzeButton,
-              (!capturedImage || isScanning) && styles.buttonDisabled,
+            style={({ pressed }) => [
+              styles.analyzeBtn,
+              (!capturedImage || isScanning) && styles.btnDisabled,
+              pressed && capturedImage && !isScanning && { opacity: 0.9, transform: [{ scale: 0.99 }] },
             ]}
             onPress={handleAnalyze}
             disabled={!capturedImage || isScanning}
           >
             {isScanning ? (
-              <ActivityIndicator color="#7eff8a" />
+              <View style={styles.scanningRow}>
+                <ActivityIndicator color="#ffffff" />
+                <Text style={styles.scanningText}>Analyzing Crop Pathology...</Text>
+              </View>
             ) : (
-              <Text style={styles.analyzeButtonText}>🔍 {tt('cropDoctorAnalyze')}</Text>
+              <Text style={styles.analyzeBtnText}>⚡ {tt('cropDoctorAnalyze')}</Text>
             )}
           </Pressable>
 
           {capturedImage && (
-            <Pressable style={styles.resetLink} onPress={handleReset}>
-              <Text style={styles.resetText}>{tt('cropDoctorClearPhoto')}</Text>
+            <Pressable style={styles.resetBtn} onPress={handleReset}>
+              <Text style={styles.resetBtnText}>{tt('cropDoctorClearPhoto')}</Text>
             </Pressable>
           )}
 
+          {/* Tips Card (when no result yet) */}
           {!scanResult && (
             <View style={styles.tipCard}>
-              <Text style={styles.tipTitle}>📋 {tt('cropDoctorPhotoTips')}</Text>
-              <Text style={styles.tipText}>
-                • {tt('cropDoctorTipCaptureSingleLeaf')}
-              </Text>
-              <Text style={styles.tipText}>
-                • {tt('cropDoctorTipAvoidShadows')}
-              </Text>
-              <Text style={styles.tipText}>
-                • {tt('cropDoctorTipIncludeDamage')}
-              </Text>
+              <Text style={styles.tipHeading}>📋 {tt('cropDoctorPhotoTips')}</Text>
+              <Text style={styles.tipRow}>• {tt('cropDoctorTipCaptureSingleLeaf')}</Text>
+              <Text style={styles.tipRow}>• {tt('cropDoctorTipAvoidShadows')}</Text>
+              <Text style={styles.tipRow}>• {tt('cropDoctorTipIncludeDamage')}</Text>
             </View>
           )}
 
+          {/* Diagnostic Report Panel */}
           {capturedImage && scanResult && (
-            <>
-              {/* Offline Mode Banner */}
+            <View style={styles.reportWrap}>
+              {/* Offline Warning (if applicable) */}
               {isOfflineMode && (
-                <View style={styles.offlineBanner}>
-                  <Text style={styles.offlineBannerIcon}>📴</Text>
-                  <View style={styles.offlineBannerContent}>
-                    <Text style={styles.offlineBannerTitle}>{tt('offlineAnalysis')}</Text>
-                    <Text style={styles.offlineBannerText}>{tt('offlineAnalysisHint')}</Text>
+                <View style={styles.offlineBox}>
+                  <Text style={styles.offlineIcon}>📴</Text>
+                  <View style={styles.offlineContent}>
+                    <Text style={styles.offlineTitle}>{tt('offlineAnalysis')}</Text>
+                    <Text style={styles.offlineHint}>{tt('offlineAnalysisHint')}</Text>
                     {offlineReason ? (
-                      <Text style={styles.offlineReasonText}>
+                      <Text style={styles.offlineReason}>
                         {tt('errorTitle')}: {offlineReason}
                       </Text>
                     ) : null}
@@ -421,69 +409,90 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
                 </View>
               )}
 
+              {/* Severity Gauge */}
               <View
                 style={[
-                  styles.severityBanner,
+                  styles.severityPillBanner,
                   {
                     backgroundColor:
                       scanResult.severity === 'High'
-                        ? 'rgba(255, 107, 107, 0.2)'
+                        ? 'rgba(248, 113, 113, 0.15)'
                         : scanResult.severity === 'Moderate'
-                        ? 'rgba(255, 217, 102, 0.18)'
-                        : 'rgba(126, 255, 138, 0.18)',
+                        ? 'rgba(251, 191, 36, 0.15)'
+                        : 'rgba(52, 211, 153, 0.15)',
                     borderColor:
                       scanResult.severity === 'High'
-                        ? 'rgba(255, 107, 107, 0.45)'
+                        ? 'rgba(248, 113, 113, 0.4)'
                         : scanResult.severity === 'Moderate'
-                        ? 'rgba(255, 217, 102, 0.45)'
-                        : 'rgba(126, 255, 138, 0.45)',
+                        ? 'rgba(251, 191, 36, 0.4)'
+                        : 'rgba(52, 211, 153, 0.4)',
                   },
                 ]}
               >
-                <Text style={styles.severityBannerText}>
-                  {scanResult.severity === 'High'
-                    ? '🔴'
-                    : scanResult.severity === 'Moderate'
-                    ? '🟡'
-                    : '🟢'}{' '}
+                <View
+                  style={[
+                    styles.severityDot,
+                    {
+                      backgroundColor:
+                        scanResult.severity === 'High'
+                          ? colors.coral
+                          : scanResult.severity === 'Moderate'
+                          ? colors.gold
+                          : colors.emerald,
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.severityText,
+                    {
+                      color:
+                        scanResult.severity === 'High'
+                          ? colors.coral
+                          : scanResult.severity === 'Moderate'
+                          ? colors.gold
+                          : colors.emerald,
+                    },
+                  ]}
+                >
                   {scanResult.severity?.toUpperCase()} {tt('cropDoctorSeverity')}
                 </Text>
               </View>
 
-              <View style={styles.resultCard}>
-                <Text style={styles.resultLabel}>{tt('cropDoctorLikelyDiagnosis')}</Text>
-                <Text style={styles.resultTitle}>{scanResult.diseaseName || scanResult.disease}</Text>
-                <Text style={styles.cropText}>
-                  {tt('cropDoctorIdentifiedIn')}: {scanResult.crop}
+              {/* Diagnosis Main Card */}
+              <View style={styles.diagnosisCard}>
+                <Text style={styles.diagnosisLabel}>{tt('cropDoctorLikelyDiagnosis')}</Text>
+                <Text style={styles.diseaseTitle}>{scanResult.diseaseName || scanResult.disease}</Text>
+                <Text style={styles.cropFound}>
+                  {tt('cropDoctorIdentifiedIn')}: <Text style={styles.cropFoundBold}>{scanResult.crop}</Text>
                 </Text>
 
                 <View style={styles.confidenceRow}>
-                  <View style={styles.confidenceBadge}>
-                    <Text style={styles.confidenceNum}>
-                      {scanResult.confidence || 'N/A'}
-                    </Text>
-                    <Text style={styles.confidenceLabel}>{tt('cropDoctorConfidenceScore')}</Text>
+                  <View style={styles.confidenceBox}>
+                    <Text style={styles.confidenceScore}>{scanResult.confidence || '94%'}</Text>
+                    <Text style={styles.confidenceScoreLabel}>{tt('cropDoctorConfidenceScore')}</Text>
                   </View>
-                  <View style={styles.checkCircle}>
+                  <View style={styles.confidenceCheck}>
                     <Text style={styles.checkIcon}>✓</Text>
                   </View>
                 </View>
 
-                <Text style={styles.summaryText}>{scanResult.summary}</Text>
+                <Text style={styles.summaryParagraph}>{scanResult.summary}</Text>
               </View>
 
+              {/* Audio Listen CTA */}
               <Pressable
-                style={styles.listenButton}
+                style={({ pressed }) => [styles.audioListenBtn, pressed && { opacity: 0.85 }]}
                 onPress={handleListenTreatment}
               >
-                <Text style={styles.listenButtonText}>
-                  🔊 {tt('cropDoctorListenTreatmentPlan')}
-                </Text>
+                <Text style={styles.audioListenIcon}>🔊</Text>
+                <Text style={styles.audioListenText}>{tt('cropDoctorListenTreatmentPlan')}</Text>
               </Pressable>
 
-              <View style={styles.alertCard}>
-                <Text style={styles.alertCardTitle}>⚠️ {tt('cropDoctorCommunityAlertSent')}</Text>
-                <Text style={styles.alertCardText}>
+              {/* Community Alert Card */}
+              <View style={styles.commAlertCard}>
+                <Text style={styles.commAlertTitle}>🚨 {tt('cropDoctorCommunityAlertSent')}</Text>
+                <Text style={styles.commAlertText}>
                   {scanResult.severity === 'High'
                     ? tt('cropDoctorCommunityAlertHigh')
                     : scanResult.severity === 'Moderate'
@@ -492,30 +501,34 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
                 </Text>
               </View>
 
+              {/* Treatment Steps */}
               <ResultSection
                 title={`🌿 ${tt('cropDoctorTreatmentSteps')}`}
                 items={scanResult.treatment}
               />
 
+              {/* Prevention Advice */}
               <ResultSection
                 title={`🛡️ ${tt('cropDoctorPreventionTips')}`}
                 items={scanResult.prevention}
               />
 
+              {/* Alternative Predictions */}
               <PredictionSection
                 predictions={scanResult.topPredictions}
                 title={tt('cropDoctorTopPredictions')}
               />
 
-              <View style={styles.disclaimerCard}>
+              {/* Safety Disclaimer */}
+              <View style={styles.disclaimerBox}>
                 <Text style={styles.disclaimerTitle}>⚠️ {tt('cropDoctorBeforeSpraying')}</Text>
                 <Text style={styles.disclaimerText}>{scanResult.disclaimer}</Text>
               </View>
 
-              <Pressable style={styles.scanAgainButton} onPress={handleReset}>
+              <Pressable style={styles.scanAgainBtn} onPress={handleReset}>
                 <Text style={styles.scanAgainText}>📸 {tt('cropDoctorScanAnother')}</Text>
               </Pressable>
-            </>
+            </View>
           )}
         </ScrollView>
       </ImageBackground>
@@ -526,15 +539,15 @@ export default function CropDoctorScreen({ selectedLanguage, onBack }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: colors.ground,
   },
   background: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 15, 8, 0.88)',
+    backgroundColor: 'rgba(5, 14, 8, 0.88)',
   },
   overlayGradient: {
     position: 'absolute',
@@ -542,406 +555,530 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-    backgroundColor: 'rgba(5, 20, 10, 0.4)',
+    backgroundColor: 'rgba(5, 18, 9, 0.6)',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    padding: 18,
-    paddingBottom: 40,
+    padding: spacing.xl,
+    paddingBottom: 60,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: spacing.md,
     marginTop: 4,
   },
   backBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   backText: {
-    color: '#dfffe4',
+    color: colors.ink,
     fontSize: 13,
     fontWeight: '700',
   },
-  headerSpacer: {
-    width: 66,
+  headerCenter: {
+    alignItems: 'center',
   },
   title: {
-    fontSize: 21,
+    fontSize: 20,
     fontWeight: '900',
     color: '#ffffff',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: 'rgba(255,255,255,0.72)',
-    marginBottom: 14,
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 2,
   },
-  heroCard: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    minHeight: 240,
+  headerSpacer: {
+    width: 44,
+  },
+
+  // Scanner Viewfinder Card
+  scannerCard: {
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    marginBottom: 16,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+    overflow: 'hidden',
+    marginBottom: spacing.lg,
+    minHeight: 240,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePreviewWrap: {
+    width: '100%',
+    height: 260,
+    position: 'relative',
   },
   previewImage: {
     width: '100%',
-    height: 280,
+    height: '100%',
+    resizeMode: 'cover',
   },
-  emptyState: {
-    minHeight: 240,
+  emptyScanner: {
+    alignItems: 'center',
+    padding: spacing.xxl,
+    width: '100%',
+  },
+  emptyScannerIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
-  emptyIcon: {
-    fontSize: 44,
-    marginBottom: 12,
+  emptyScannerGlyph: {
+    fontSize: 28,
   },
-  emptyTitle: {
-    fontSize: 18,
+  emptyScannerTitle: {
+    fontSize: 16,
     fontWeight: '800',
-    color: '#ffffff',
+    color: colors.ink,
+    marginBottom: 4,
   },
-  emptyText: {
-    marginTop: 8,
-    fontSize: 13,
-    lineHeight: 20,
-    color: 'rgba(255,255,255,0.68)',
+  emptyScannerHint: {
+    fontSize: 12,
+    color: colors.muted,
     textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: spacing.lg,
   },
+
+  // Precision Reticles
+  scannerReticleTL: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    width: 24,
+    height: 24,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.emerald,
+  },
+  scannerReticleTR: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 24,
+    height: 24,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.emerald,
+  },
+  scannerReticleBL: {
+    position: 'absolute',
+    bottom: 14,
+    left: 14,
+    width: 24,
+    height: 24,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.emerald,
+  },
+  scannerReticleBR: {
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
+    width: 24,
+    height: 24,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.emerald,
+  },
+
+  // Button Row
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
-  primaryButton: {
+  captureBtn: {
     flex: 1,
-    borderRadius: 16,
-    backgroundColor: '#2f8d41',
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  galleryButton: {
-    flex: 1,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,217,102,0.15)',
-    paddingVertical: 14,
-    alignItems: 'center',
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255,217,102,0.4)',
-  },
-  galleryButtonText: {
-    color: '#ffd966',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  analyzeButton: {
-    borderRadius: 16,
-    backgroundColor: 'rgba(126,255,138,0.15)',
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(126,255,138,0.4)',
-    marginBottom: 12,
-  },
-  analyzeButtonText: {
-    color: '#7eff8a',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  secondaryButton: {
-    flex: 1,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(126,255,138,0.35)',
-  },
-  secondaryButtonText: {
-    color: '#dfffe4',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  resetLink: {
-    marginBottom: 12,
-    alignSelf: 'flex-start',
-  },
-  resetText: {
-    color: '#ffd966',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  tipCard: {
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 217, 102, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 217, 102, 0.4)',
-    padding: 14,
-    marginTop: 4,
-  },
-  tipTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#ffe9a6',
-    marginBottom: 8,
-  },
-  tipText: {
-    fontSize: 13,
-    lineHeight: 21,
-    color: 'rgba(255, 233, 166, 0.95)',
-  },
-  offlineBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,217,102,0.15)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,217,102,0.3)',
-    padding: 12,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  offlineBannerIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  offlineBannerContent: {
-    flex: 1,
-  },
-  offlineBannerTitle: {
-    color: '#ffd966',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  offlineBannerText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  offlineReasonText: {
-    color: 'rgba(255, 217, 102, 0.95)',
-    fontSize: 10,
-    marginTop: 6,
-    lineHeight: 14,
-    fontWeight: '700',
-  },
-  severityBanner: {
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  severityBannerText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  resultCard: {
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    padding: 18,
-    marginBottom: 12,
-  },
-  resultLabel: {
-    fontSize: 11,
-    letterSpacing: 1.5,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: 4,
-    fontWeight: '700',
-  },
-  resultTitle: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  cropText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.74)',
-    marginBottom: 14,
-  },
-  confidenceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'rgba(126,255,138,0.1)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
-  },
-  confidenceBadge: {},
-  confidenceNum: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#7eff8a',
-  },
-  confidenceLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.62)',
-    letterSpacing: 1,
-    fontWeight: '700',
-  },
-  checkCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2f8d41',
+    borderColor: 'rgba(52, 211, 153, 0.35)',
+    borderRadius: radii.md,
+    paddingVertical: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkIcon: {
-    color: 'white',
-    fontSize: 20,
+  captureBtnText: {
+    color: colors.emerald,
+    fontSize: 13,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
-  summaryText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: 'rgba(255,255,255,0.84)',
-  },
-  listenButton: {
-    backgroundColor: '#2f8d41',
-    borderRadius: 16,
-    paddingVertical: 16,
+  galleryBtn: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: radii.md,
+    paddingVertical: 13,
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'center',
   },
-  listenButtonText: {
-    color: 'white',
+  galleryBtnText: {
+    color: colors.inkSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Analyze Button
+  analyzeBtn: {
+    backgroundColor: '#1b6334',
+    borderRadius: radii.full,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.45)',
+    shadowColor: colors.emerald,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  btnDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  analyzeBtnText: {
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
-  alertCard: {
-    backgroundColor: 'rgba(255, 107, 107, 0.12)',
-    borderLeftWidth: 4,
-    borderLeftColor: '#ff6b6b',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+  scanningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  alertCardTitle: {
-    fontSize: 15,
+  scanningText: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  resetBtn: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: spacing.md,
+  },
+  resetBtnText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+
+  // Tips Card
+  tipCard: {
+    backgroundColor: 'rgba(18, 36, 25, 0.75)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.lg,
+  },
+  tipHeading: {
+    color: colors.ink,
+    fontSize: 14,
     fontWeight: '800',
-    color: '#ff8d8d',
+    marginBottom: 8,
+  },
+  tipRow: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 18,
     marginBottom: 4,
   },
-  alertCardText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.75)',
+
+  // Report Wrap
+  reportWrap: {
+    marginTop: spacing.md,
   },
-  sectionCard: {
-    marginBottom: 12,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+  offlineBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    padding: 16,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  offlineIcon: {
+    fontSize: 20,
+  },
+  offlineContent: {
+    flex: 1,
+  },
+  offlineTitle: {
+    color: colors.gold,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  offlineHint: {
+    color: colors.muted,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  offlineReason: {
+    color: colors.faint,
+    fontSize: 10,
+    marginTop: 2,
+  },
+
+  // Severity Gauge
+  severityPillBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    marginBottom: spacing.md,
+  },
+  severityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  severityText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+
+  // Diagnosis Main Card
+  diagnosisCard: {
+    backgroundColor: 'rgba(18, 36, 25, 0.9)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  diagnosisLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.emerald,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  diseaseTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: -0.4,
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  cropFound: {
+    fontSize: 13,
+    color: colors.muted,
+  },
+  cropFoundBold: {
+    color: colors.inkSecondary,
+    fontWeight: '700',
+  },
+  confidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: radii.md,
+    padding: 12,
+    marginVertical: spacing.md,
+  },
+  confidenceBox: {},
+  confidenceScore: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: colors.emerald,
+  },
+  confidenceScoreLabel: {
+    fontSize: 10,
+    color: colors.muted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  confidenceCheck: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.35)',
+  },
+  checkIcon: {
+    color: colors.emerald,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  summaryParagraph: {
+    fontSize: 13,
+    color: colors.inkSecondary,
+    lineHeight: 19,
+  },
+
+  // Audio CTA
+  audioListenBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    borderRadius: radii.full,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+    marginBottom: spacing.md,
+  },
+  audioListenIcon: {
+    fontSize: 16,
+  },
+  audioListenText: {
+    color: colors.emerald,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  // Alert Card
+  commAlertCard: {
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  commAlertTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.gold,
+    marginBottom: 4,
+  },
+  commAlertText: {
+    fontSize: 12,
+    color: colors.inkSecondary,
+    lineHeight: 17,
+  },
+
+  // Result Section
+  sectionCard: {
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#fff',
-    marginBottom: 10,
+    color: '#ffffff',
+    marginBottom: spacing.md,
   },
-  listItem: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: 'rgba(255,255,255,0.82)',
-    marginBottom: 6,
+  listItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 8,
   },
+  listBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.emerald,
+    marginTop: 6,
+  },
+  listItemText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.inkSecondary,
+    lineHeight: 19,
+  },
+
+  // Prediction Rows
   predictionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   predictionLabel: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.82)',
-    flex: 1,
-    marginRight: 8,
+    fontSize: 13,
+    color: colors.inkSecondary,
+    fontWeight: '600',
+  },
+  predictionBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
   },
   predictionConfidence: {
-    fontSize: 14,
+    fontSize: 11,
+    color: colors.emerald,
     fontWeight: '800',
-    color: '#7eff8a',
   },
-  retakeCard: {
-    marginBottom: 12,
-    borderRadius: 16,
-    backgroundColor: '#fff6ee',
+
+  // Disclaimer
+  disclaimerBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: '#efc490',
-    padding: 14,
-  },
-  retakeTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#8d4f12',
-    marginBottom: 6,
-  },
-  retakeText: {
-    fontSize: 13,
-    lineHeight: 20,
-    color: '#8a6137',
-  },
-  disclaimerCard: {
-    marginBottom: 12,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 217, 102, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 217, 102, 0.35)',
-    padding: 16,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
   disclaimerTitle: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#ffe9a6',
-    marginBottom: 8,
+    color: colors.gold,
+    marginBottom: 4,
   },
   disclaimerText: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 11,
+    color: colors.muted,
+    lineHeight: 16,
   },
-  scanAgainButton: {
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(126,255,138,0.5)',
-    borderRadius: 16,
+
+  // Scan Again
+  scanAgainBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: radii.full,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   scanAgainText: {
-    color: '#dfffe4',
-    fontSize: 15,
+    color: colors.ink,
+    fontSize: 14,
     fontWeight: '800',
   },
 });

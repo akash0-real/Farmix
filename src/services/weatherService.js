@@ -3,7 +3,7 @@ let weatherApiUrl = 'https://api.open-meteo.com/v1/forecast';
 
 try {
   // Keep local endpoints/keys in src/config/localSecrets.js (gitignored).
-  // eslint-disable-next-line global-require, import/no-unresolved
+  // eslint-disable-next-line
   const localSecrets = require('../config/localSecrets');
   geocodeApiUrl = localSecrets.WEATHER_GEOCODE_API_URL || geocodeApiUrl;
   weatherApiUrl = localSecrets.WEATHER_FORECAST_API_URL || weatherApiUrl;

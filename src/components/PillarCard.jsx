@@ -1,9 +1,13 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import { colors, radii, spacing } from '../theme/theme';
 
 export default function PillarCard({ title, description, onPress }) {
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+      onPress={onPress}
+    >
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
     </Pressable>
@@ -12,21 +16,23 @@ export default function PillarCard({ title, description, onPress }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 16,
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: '#d9e1dc',
-    marginBottom: 12,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a223d',
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: -0.2,
   },
   description: {
     marginTop: 6,
-    fontSize: 14,
-    color: '#576577',
+    fontSize: 13,
+    color: colors.muted,
+    lineHeight: 18,
   },
 });

@@ -9,6 +9,7 @@ import CommunityLessonsScreen from '../screens/CommunityLessonsScreen';
 import BuyerConnectScreen from '../screens/BuyerConnectScreen';
 import SoilAnalysisScreen from '../screens/SoilAnalysisScreen';
 import GovtSchemesScreen from '../screens/GovtSchemesScreen';
+import { colors } from '../theme/theme';
 
 const SCREEN_MAP = {
   Splash: SplashScreen,
@@ -55,6 +56,7 @@ export default function AppNavigator({ selectedLanguage, onLogout }) {
           selectedLanguage,
           onBack: () => setActiveScreen('Home'),
         };
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -67,7 +69,7 @@ export default function AppNavigator({ selectedLanguage, onLogout }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f5f4',
+    backgroundColor: colors.ground,
   },
   content: {
     flex: 1,

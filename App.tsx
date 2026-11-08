@@ -46,7 +46,7 @@ function AppContent() {
   if (isLoading && isAuthenticated) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2f8d41" />
+        <ActivityIndicator size="large" color="#34d399" />
       </View>
     );
   }
@@ -133,13 +133,13 @@ function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0d3320',
+    backgroundColor: '#08120b',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0d3320',
+    backgroundColor: '#08120b',
   },
 });
 

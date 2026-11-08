@@ -17,6 +17,7 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { analyzeSoil, getSoilTypeIcon, getMoistureColor, getPhColor } from '../services/soilAnalysisService';
 import { t } from '../languages/uiText';
 import { getTtsCode } from '../languages/languageConfig';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -26,9 +27,10 @@ function ResultSection({ title, items, itemStyle }) {
     <View style={styles.sectionCard}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {items.map((item, i) => (
-        <Text key={i} style={[styles.listItem, itemStyle]}>
-          • {item}
-        </Text>
+        <View key={i} style={styles.listItemRow}>
+          <View style={styles.listBullet} />
+          <Text style={[styles.listItemText, itemStyle]}>{item}</Text>
+        </View>
       ))}
     </View>
   );
@@ -38,7 +40,7 @@ function PropertyBadge({ label, value, color }) {
   return (
     <View style={[styles.propertyBadge, color && { borderColor: color }]}>
       <Text style={styles.propertyLabel}>{label}</Text>
-      <Text style={[styles.propertyValue, color && { color }]}>{value}</Text>
+      <Text style={[styles.propertyValue, color && { color }]}>{value || '—'}</Text>
     </View>
   );
 }
@@ -139,7 +141,6 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
 
       setAnalysisResult(result);
 
-      // Speak result summary
       const ttsCode = getTtsCode(selectedLanguage);
       Tts.setDefaultLanguage(ttsCode);
       Tts.stop();
@@ -202,75 +203,102 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header */}
           <View style={styles.header}>
             <Pressable onPress={onBack} style={styles.backBtn}>
               <Text style={styles.backText}>{tt('backArrow')}</Text>
             </Pressable>
-            <Text style={styles.title}>🌍 {tt('soilAnalysis')}</Text>
+            <View style={styles.headerCenter}>
+              <Text style={styles.title}>🌍 {tt('soilAnalysis')}</Text>
+              <Text style={styles.subtitle}>{tt('soilAnalysisSubtitle')}</Text>
+            </View>
             <View style={styles.headerSpacer} />
           </View>
 
-          <Text style={styles.subtitle}>{tt('soilAnalysisSubtitle')}</Text>
-
-          <View style={styles.heroCard}>
+          {/* Scanner Viewfinder Box */}
+          <View style={styles.scannerCard}>
             {capturedImage?.uri ? (
-              <Image
-                source={{ uri: capturedImage.uri }}
-                style={styles.previewImage}
-              />
+              <View style={styles.imagePreviewWrap}>
+                <Image source={{ uri: capturedImage.uri }} style={styles.previewImage} />
+                <View style={styles.scannerReticleTL} />
+                <View style={styles.scannerReticleTR} />
+                <View style={styles.scannerReticleBL} />
+                <View style={styles.scannerReticleBR} />
+              </View>
             ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>🌍</Text>
+              <View style={styles.emptyScanner}>
+                <View style={styles.scannerReticleTL} />
+                <View style={styles.scannerReticleTR} />
+                <View style={styles.scannerReticleBL} />
+                <View style={styles.scannerReticleBR} />
+                <View style={styles.emptyIconCircle}>
+                  <Text style={styles.emptyGlyph}>🌍</Text>
+                </View>
                 <Text style={styles.emptyTitle}>{tt('soilNoPhotoYet')}</Text>
-                <Text style={styles.emptyText}>{tt('soilNoPhotoHint')}</Text>
+                <Text style={styles.emptyHint}>{tt('soilNoPhotoHint')}</Text>
               </View>
             )}
           </View>
 
+          {/* Actions Row */}
           <View style={styles.buttonRow}>
-            <Pressable style={styles.primaryButton} onPress={handleCapture}>
-              <Text style={styles.primaryButtonText}>
+            <Pressable
+              style={({ pressed }) => [styles.captureBtn, pressed && { opacity: 0.85 }]}
+              onPress={handleCapture}
+            >
+              <Text style={styles.captureBtnText}>
                 {capturedImage ? `📷 ${tt('soilRetake')}` : `📷 ${tt('soilOpenCamera')}`}
               </Text>
             </Pressable>
-            <Pressable style={styles.galleryButton} onPress={handlePickFromGallery}>
-              <Text style={styles.galleryButtonText}>🖼️ {tt('soilGallery')}</Text>
+
+            <Pressable
+              style={({ pressed }) => [styles.galleryBtn, pressed && { opacity: 0.85 }]}
+              onPress={handlePickFromGallery}
+            >
+              <Text style={styles.galleryBtnText}>🖼️ {tt('soilGallery')}</Text>
             </Pressable>
           </View>
 
+          {/* Analyze Primary CTA */}
           <Pressable
-            style={[
-              styles.analyzeButton,
-              (!capturedImage || isAnalyzing) && styles.buttonDisabled,
+            style={({ pressed }) => [
+              styles.analyzeBtn,
+              (!capturedImage || isAnalyzing) && styles.btnDisabled,
+              pressed && capturedImage && !isAnalyzing && { opacity: 0.9 },
             ]}
             onPress={handleAnalyze}
             disabled={!capturedImage || isAnalyzing}
           >
             {isAnalyzing ? (
-              <ActivityIndicator color="#7eff8a" />
+              <View style={styles.analyzingRow}>
+                <ActivityIndicator color="#ffffff" />
+                <Text style={styles.analyzingText}>Analyzing Soil Composition...</Text>
+              </View>
             ) : (
-              <Text style={styles.analyzeButtonText}>🔬 {tt('soilAnalyze')}</Text>
+              <Text style={styles.analyzeBtnText}>⚡ {tt('soilAnalyze')}</Text>
             )}
           </Pressable>
 
           {capturedImage && !analysisResult && (
-            <Pressable style={styles.resetLink} onPress={handleReset}>
-              <Text style={styles.resetText}>{tt('soilClearPhoto')}</Text>
+            <Pressable style={styles.resetBtn} onPress={handleReset}>
+              <Text style={styles.resetBtnText}>{tt('soilClearPhoto')}</Text>
             </Pressable>
           )}
 
+          {/* Tips Card */}
           {!analysisResult && (
             <View style={styles.tipCard}>
-              <Text style={styles.tipTitle}>📋 {tt('soilPhotoTips')}</Text>
-              <Text style={styles.tipText}>• {tt('soilTip1')}</Text>
-              <Text style={styles.tipText}>• {tt('soilTip2')}</Text>
-              <Text style={styles.tipText}>• {tt('soilTip3')}</Text>
-              <Text style={styles.tipText}>• {tt('soilTip4')}</Text>
+              <Text style={styles.tipHeading}>📋 {tt('soilPhotoTips')}</Text>
+              <Text style={styles.tipRow}>• {tt('soilTip1')}</Text>
+              <Text style={styles.tipRow}>• {tt('soilTip2')}</Text>
+              <Text style={styles.tipRow}>• {tt('soilTip3')}</Text>
+              <Text style={styles.tipRow}>• {tt('soilTip4')}</Text>
             </View>
           )}
 
+          {/* Results Panel */}
           {capturedImage && analysisResult && (
-            <>
+            <View style={styles.reportWrap}>
               {/* Soil Type Banner */}
               <View style={styles.soilTypeBanner}>
                 <Text style={styles.soilTypeIcon}>
@@ -287,7 +315,7 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
                 </View>
               </View>
 
-              {/* Soil Properties */}
+              {/* Soil Properties Grid */}
               <View style={styles.propertiesGrid}>
                 <PropertyBadge
                   label={tt('soilColor')}
@@ -313,17 +341,18 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
                 />
               </View>
 
-              {/* Summary */}
+              {/* Summary Card */}
               <View style={styles.summaryCard}>
                 <Text style={styles.summaryTitle}>📊 {tt('soilSummary')}</Text>
                 <Text style={styles.summaryText}>{analysisResult.summary}</Text>
               </View>
 
               {/* Listen Button */}
-              <Pressable style={styles.listenButton} onPress={handleListenResult}>
-                <Text style={styles.listenButtonText}>
-                  🔊 {tt('soilListenAnalysis')}
-                </Text>
+              <Pressable
+                style={({ pressed }) => [styles.listenBtn, pressed && { opacity: 0.85 }]}
+                onPress={handleListenResult}
+              >
+                <Text style={styles.listenBtnText}>🔊 {tt('soilListenAnalysis')}</Text>
               </Pressable>
 
               {/* Best Crops */}
@@ -355,16 +384,16 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
               />
 
               {/* Disclaimer */}
-              <View style={styles.disclaimerCard}>
+              <View style={styles.disclaimerBox}>
                 <Text style={styles.disclaimerTitle}>⚠️ {tt('soilDisclaimer')}</Text>
                 <Text style={styles.disclaimerText}>{analysisResult.disclaimer}</Text>
               </View>
 
               {/* Scan Another */}
-              <Pressable style={styles.scanAgainButton} onPress={handleReset}>
+              <Pressable style={styles.scanAgainBtn} onPress={handleReset}>
                 <Text style={styles.scanAgainText}>🌍 {tt('soilScanAnother')}</Text>
               </Pressable>
-            </>
+            </View>
           )}
         </ScrollView>
       </ImageBackground>
@@ -375,15 +404,15 @@ export default function SoilAnalysisScreen({ selectedLanguage, onBack }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: colors.ground,
   },
   background: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 15, 8, 0.88)',
+    backgroundColor: 'rgba(5, 14, 8, 0.88)',
   },
   overlayGradient: {
     position: 'absolute',
@@ -391,315 +420,449 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-    backgroundColor: 'rgba(5, 20, 10, 0.4)',
+    backgroundColor: 'rgba(5, 18, 9, 0.6)',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    padding: 18,
-    paddingBottom: 40,
+    padding: spacing.xl,
+    paddingBottom: 60,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: spacing.md,
     marginTop: 4,
   },
   backBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   backText: {
-    color: '#dfffe4',
+    color: colors.ink,
     fontSize: 13,
     fontWeight: '700',
   },
-  headerSpacer: {
-    width: 66,
+  headerCenter: {
+    alignItems: 'center',
   },
   title: {
-    fontSize: 21,
+    fontSize: 20,
     fontWeight: '900',
     color: '#ffffff',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: 'rgba(255,255,255,0.72)',
-    marginBottom: 14,
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 2,
   },
-  heroCard: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    minHeight: 240,
+  headerSpacer: {
+    width: 44,
+  },
+
+  // Scanner Viewfinder
+  scannerCard: {
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    marginBottom: 16,
+    borderColor: 'rgba(217, 119, 6, 0.3)',
+    overflow: 'hidden',
+    marginBottom: spacing.lg,
+    minHeight: 240,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePreviewWrap: {
+    width: '100%',
+    height: 260,
+    position: 'relative',
   },
   previewImage: {
     width: '100%',
-    height: 280,
+    height: '100%',
+    resizeMode: 'cover',
   },
-  emptyState: {
-    minHeight: 240,
+  emptyScanner: {
+    alignItems: 'center',
+    padding: spacing.xxl,
+    width: '100%',
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(217, 119, 6, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(217, 119, 6, 0.3)',
   },
-  emptyIcon: {
-    fontSize: 44,
-    marginBottom: 12,
+  emptyGlyph: {
+    fontSize: 28,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 8,
+    color: colors.ink,
+    marginBottom: 4,
   },
-  emptyText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
+  emptyHint: {
+    fontSize: 12,
+    color: colors.muted,
     textAlign: 'center',
     lineHeight: 18,
+    paddingHorizontal: spacing.lg,
   },
+
+  // Reticles
+  scannerReticleTL: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    width: 24,
+    height: 24,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.clay,
+  },
+  scannerReticleTR: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 24,
+    height: 24,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.clay,
+  },
+  scannerReticleBL: {
+    position: 'absolute',
+    bottom: 14,
+    left: 14,
+    width: 24,
+    height: 24,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.clay,
+  },
+  scannerReticleBR: {
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
+    width: 24,
+    height: 24,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.clay,
+  },
+
+  // Buttons
   buttonRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
+    gap: 12,
+    marginBottom: spacing.md,
   },
-  primaryButton: {
+  captureBtn: {
     flex: 1,
-    backgroundColor: '#2f8d41',
-    borderRadius: 14,
-    paddingVertical: 14,
+    backgroundColor: 'rgba(217, 119, 6, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(217, 119, 6, 0.35)',
+    borderRadius: radii.md,
+    paddingVertical: 13,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 15,
+  captureBtnText: {
+    color: colors.clay,
+    fontSize: 13,
     fontWeight: '800',
   },
-  galleryButton: {
+  galleryBtn: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  galleryButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  analyzeButton: {
-    backgroundColor: 'rgba(126,255,138,0.2)',
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: radii.md,
+    paddingVertical: 13,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(126,255,138,0.4)',
-    marginBottom: 12,
+    justifyContent: 'center',
   },
-  analyzeButtonText: {
-    color: '#7eff8a',
+  galleryBtnText: {
+    color: colors.inkSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  analyzeBtn: {
+    backgroundColor: '#9a4c16',
+    borderRadius: radii.full,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 146, 60, 0.45)',
+    shadowColor: colors.clay,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  btnDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  analyzeBtnText: {
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '900',
+    letterSpacing: 0.5,
   },
-  buttonDisabled: {
-    opacity: 0.5,
+  analyzingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  resetLink: {
-    alignSelf: 'center',
+  analyzingText: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  resetBtn: {
+    alignItems: 'center',
     paddingVertical: 8,
+    marginBottom: spacing.md,
   },
-  resetText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 13,
+  resetBtnText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
+
+  // Tips
   tipCard: {
-    marginTop: 12,
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(18, 36, 25, 0.75)',
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.lg,
   },
-  tipTitle: {
-    color: '#ffe9a6',
+  tipHeading: {
+    color: colors.ink,
     fontSize: 14,
     fontWeight: '800',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  tipText: {
-    color: 'rgba(255,255,255,0.78)',
-    fontSize: 13,
-    lineHeight: 20,
+  tipRow: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 18,
     marginBottom: 4,
+  },
+
+  // Report
+  reportWrap: {
+    marginTop: spacing.md,
   },
   soilTypeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(139,90,43,0.25)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: 'rgba(217, 119, 6, 0.15)',
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(139,90,43,0.5)',
+    borderColor: 'rgba(217, 119, 6, 0.35)',
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    gap: 12,
   },
   soilTypeIcon: {
-    fontSize: 40,
-    marginRight: 14,
+    fontSize: 28,
   },
   soilTypeInfo: {
     flex: 1,
   },
   soilTypeLabel: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.clay,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   soilTypeName: {
-    color: '#fff',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: -0.3,
   },
   confidenceBadge: {
-    backgroundColor: 'rgba(126,255,138,0.2)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radii.full,
   },
   confidenceText: {
-    color: '#7eff8a',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
+    color: colors.inkSecondary,
   },
+
+  // Properties Grid
   propertiesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: spacing.md,
   },
   propertyBadge: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    minWidth: '30%',
-    flexGrow: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: 12,
+    alignItems: 'center',
   },
   propertyLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 10,
+    fontSize: 9,
+    color: colors.muted,
     fontWeight: '700',
-    marginBottom: 4,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   propertyValue: {
-    color: '#fff',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
+    color: colors.ink,
   },
+
+  // Summary Card
   summaryCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
   summaryTitle: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '900',
-    marginBottom: 10,
-  },
-  summaryText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  listenButton: {
-    backgroundColor: 'rgba(126,255,138,0.16)',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  listenButtonText: {
-    color: '#dfffe4',
     fontSize: 14,
     fontWeight: '800',
+    color: '#ffffff',
+    marginBottom: 6,
   },
-  sectionCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 14,
+  summaryText: {
+    fontSize: 13,
+    color: colors.inkSecondary,
+    lineHeight: 19,
+  },
+
+  // Audio Listen
+  listenBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    borderRadius: radii.full,
+    paddingVertical: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+    marginBottom: spacing.md,
+  },
+  listenBtnText: {
+    color: colors.emerald,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  // Section
+  sectionCard: {
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '900',
-    marginBottom: 10,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginBottom: spacing.md,
   },
-  listItem: {
-    color: 'rgba(255,255,255,0.82)',
+  listItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 8,
+  },
+  listBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.emerald,
+    marginTop: 6,
+  },
+  listItemText: {
+    flex: 1,
     fontSize: 13,
-    lineHeight: 20,
-    marginBottom: 6,
+    color: colors.inkSecondary,
+    lineHeight: 19,
   },
   bestCropItem: {
-    color: '#7eff8a',
+    color: colors.emerald,
+    fontWeight: '700',
   },
   avoidCropItem: {
-    color: '#ff9b9b',
+    color: colors.coral,
   },
-  disclaimerCard: {
-    marginTop: 8,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,217,102,0.1)',
+
+  // Disclaimer
+  disclaimerBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,217,102,0.25)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
   disclaimerTitle: {
-    color: '#ffd966',
-    fontSize: 13,
-    fontWeight: '900',
-    marginBottom: 6,
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.gold,
+    marginBottom: 4,
   },
   disclaimerText: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    color: colors.muted,
+    lineHeight: 16,
   },
-  scanAgainButton: {
-    marginTop: 16,
-    backgroundColor: '#2f8d41',
-    borderRadius: 14,
-    paddingVertical: 16,
+
+  // Scan Again
+  scanAgainBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: radii.full,
+    paddingVertical: 14,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   scanAgainText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '900',
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '800',
   },
 });

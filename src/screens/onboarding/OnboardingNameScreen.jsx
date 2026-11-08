@@ -18,6 +18,7 @@ import {
   destroyVoiceSession,
   startVoiceSession,
 } from '../../services/voiceAssistantService';
+import { colors, radii, spacing } from '../../theme/theme';
 
 const farmImage = require('../../assests/images/field.jpg');
 
@@ -44,6 +45,7 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
       speakInSelectedLanguage(message);
     }, 500);
     return () => Tts.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLanguage]);
 
   useEffect(() => {
@@ -103,12 +105,12 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Progress Indicator */}
+            {/* Progress Ribbon */}
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>
                 <View style={[styles.progressFill, { width: '33%' }]} />
               </View>
-              <Text style={styles.progressText}>{t(selectedLanguage, 'nameStep')}</Text>
+              <Text style={styles.progressText}>STEP 1 OF 3 · {t(selectedLanguage, 'nameStep')}</Text>
             </View>
 
             {/* Glass Card */}
@@ -116,9 +118,9 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
               <View style={styles.glassInner}>
                 <View style={styles.handle} />
 
-                {/* Icon */}
+                {/* Identity Icon */}
                 <View style={styles.iconContainer}>
-                  <Text style={styles.icon}>👋</Text>
+                  <Text style={styles.icon}>🌾</Text>
                 </View>
 
                 <Text style={styles.title}>{t(selectedLanguage, 'onboardingNameTitle')}</Text>
@@ -126,13 +128,13 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
                   {t(selectedLanguage, 'onboardingNameSubtitle')}
                 </Text>
 
-                {/* Mic Button */}
+                {/* Mic Voice Prompt */}
                 <Pressable
                   style={[styles.micButton, isListening && styles.micButtonListening]}
                   onPress={speakWelcome}
                   onLongPress={handleVoiceNameInput}
                 >
-                  <Text style={styles.micIcon}>🎤</Text>
+                  <Text style={styles.micIcon}>🎙️</Text>
                   <Text style={styles.micText}>
                     {isListening
                       ? t(selectedLanguage, 'voiceListeningNow')
@@ -140,13 +142,13 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
                   </Text>
                 </Pressable>
 
-                {/* Name Input */}
+                {/* Input Container */}
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>{t(selectedLanguage, 'yourName')}</Text>
                   <TextInput
                     style={styles.input}
                     placeholder={t(selectedLanguage, 'enterFullName')}
-                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    placeholderTextColor={colors.faint}
                     value={name}
                     onChangeText={(text) => {
                       setName(text);
@@ -157,20 +159,19 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
                   {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 </View>
 
-                {/* Continue Button */}
+                {/* Continue CTA */}
                 <Pressable
                   style={({ pressed }) => [
                     styles.continueButton,
-                    pressed && styles.continueButtonPressed,
+                    pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
                     !name.trim() && styles.continueButtonDisabled,
                   ]}
                   onPress={handleContinue}
                   disabled={!name.trim()}
                 >
-                  <Text style={styles.continueButtonText}>{t(selectedLanguage, 'continue')}</Text>
+                  <Text style={styles.continueButtonText}>{t(selectedLanguage, 'continue')} →</Text>
                 </Pressable>
 
-                {/* Info Text */}
                 <Text style={styles.infoText}>
                   {t(selectedLanguage, 'onboardingInfo')}
                 </Text>
@@ -186,22 +187,23 @@ export default function OnboardingNameScreen({ selectedLanguage, onNext }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.ground,
   },
   background: {
     flex: 1,
-    backgroundColor: '#0d3320',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 20, 10, 0.75)',
+    backgroundColor: 'rgba(5, 14, 8, 0.45)',
   },
   overlayBottom: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '50%',
-    backgroundColor: 'rgba(5, 25, 12, 0.5)',
+    height: '65%',
+    backgroundColor: 'rgba(5, 18, 9, 0.75)',
   },
   keyboardView: {
     flex: 1,
@@ -209,177 +211,163 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: 30,
   },
-
-  // Progress
   progressContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 24,
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.lg,
   },
   progressBar: {
     height: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 2,
     marginBottom: 8,
   },
   progressFill: {
     height: 4,
-    backgroundColor: '#7eff8a',
+    backgroundColor: colors.emerald,
     borderRadius: 2,
   },
   progressText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
-
-  // Glass Sheet
   glassSheet: {
-    marginHorizontal: 20,
-    borderRadius: 28,
+    marginHorizontal: spacing.xl,
+    borderRadius: radii.xl + 6,
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    backgroundColor: 'rgba(10, 24, 15, 0.94)',
   },
   glassInner: {
-    backgroundColor: 'rgba(8, 28, 15, 0.85)',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xxl,
     paddingTop: 16,
-    paddingBottom: 28,
+    paddingBottom: spacing.xxl,
   },
   handle: {
-    width: 40,
+    width: 36,
     height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
-
-  // Icon
   iconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 24,
-    backgroundColor: 'rgba(126, 255, 138, 0.15)',
+    width: 64,
+    height: 64,
+    borderRadius: radii.xl,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(126, 255, 138, 0.25)',
+    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   icon: {
-    fontSize: 32,
+    fontSize: 28,
   },
-
-  // Text
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
-    color: '#fff',
+    color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
+    letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.65)',
+    fontSize: 13,
+    color: colors.muted,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    lineHeight: 18,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.sm,
   },
-
-  // Mic Button
   micButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingVertical: 9,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: radii.full,
     alignSelf: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   micButtonListening: {
-    borderColor: 'rgba(255,107,107,0.45)',
-    backgroundColor: 'rgba(255,107,107,0.15)',
+    borderColor: colors.coral,
+    backgroundColor: 'rgba(248, 113, 113, 0.15)',
   },
   micIcon: {
-    fontSize: 16,
+    fontSize: 14,
   },
   micText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
-    fontWeight: '600',
+    color: colors.inkSecondary,
+    fontSize: 12,
+    fontWeight: '700',
   },
-
-  // Input
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   inputLabel: {
-    color: '#7eff8a',
-    fontSize: 11,
+    color: colors.emerald,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1.5,
-    marginBottom: 10,
+    letterSpacing: 1,
+    marginBottom: 8,
+    textTransform: 'uppercase',
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.14)',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 17,
-    color: '#fff',
-    fontWeight: '600',
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '700',
   },
   errorText: {
-    color: '#ff6b6b',
-    fontSize: 12,
+    color: colors.coral,
+    fontSize: 11,
     fontWeight: '600',
-    marginTop: 8,
+    marginTop: 6,
   },
-
-  // Button
   continueButton: {
-    backgroundColor: '#2f8d41',
-    paddingVertical: 16,
-    borderRadius: 999,
+    backgroundColor: '#1b6334',
+    paddingVertical: 15,
+    borderRadius: radii.full,
     alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#2f8d41',
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(126, 255, 138, 0.25)',
-  },
-  continueButtonPressed: {
-    opacity: 0.9,
+    borderColor: 'rgba(52, 211, 153, 0.4)',
+    shadowColor: colors.emerald,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
   continueButtonDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    opacity: 0.5,
     shadowOpacity: 0,
     elevation: 0,
   },
   continueButtonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '900',
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
-
-  // Info
   infoText: {
-    color: 'rgba(255,255,255,0.4)',
+    color: colors.faint,
     fontSize: 11,
     textAlign: 'center',
     lineHeight: 16,

@@ -18,6 +18,7 @@ import { translateMandiItems } from '../services/translationService';
 import { cacheMandiPrices, getCachedMandiPrices, formatTimeAgo } from '../services/offlineCache';
 import { analyzePrices, formatPrice } from '../services/priceAnalysisService';
 import MandiPriceCard from '../components/MandiPriceCard';
+import { colors, radii, spacing } from '../theme/theme';
 
 const farmImage = require('../assests/images/field.jpg');
 
@@ -45,14 +46,11 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
         crops: user.crops || [],
         limit: 12,
       });
-      // Translate dynamic content if not English
       const translatedData = await translateMandiItems(data, selectedLanguage);
       setPrices(translatedData);
       setLastSync(Date.now());
-      // Cache for offline use
       cacheMandiPrices(translatedData);
     } catch (err) {
-      // Try to load from cache
       const cached = await getCachedMandiPrices();
       if (cached?.data?.length > 0) {
         setPrices(cached.data);
@@ -133,6 +131,7 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header Row */}
           <View style={styles.headerRow}>
             <Pressable style={styles.backBtn} onPress={onBack}>
               <Text style={styles.backText}>{t(selectedLanguage, 'backArrow')}</Text>
@@ -142,9 +141,12 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
             </Pressable>
           </View>
 
-          <Text style={styles.title}>💰 {t(selectedLanguage, 'mandiPricesTitle')}</Text>
-          <Text style={styles.subtitle}>{t(selectedLanguage, 'liveMarketUpdates')}</Text>
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>📈 {t(selectedLanguage, 'mandiPricesTitle')}</Text>
+            <Text style={styles.subtitle}>{t(selectedLanguage, 'liveMarketUpdates')}</Text>
+          </View>
 
+          {/* Offline Banner */}
           {isOffline && (
             <View style={styles.offlineBanner}>
               <Text style={styles.offlineIcon}>📴</Text>
@@ -157,51 +159,59 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
             </View>
           )}
 
+          {/* Location & Refresh Strip */}
           <View style={styles.chipsRow}>
             <View style={styles.chip}>
-              <Text style={styles.chipText}>
+              <Text style={styles.chipText} numberOfLines={1}>
                 📍 {t(selectedLanguage, 'mandiForLocation')}: {locationLabel}
               </Text>
             </View>
             <Pressable style={styles.refreshBtn} onPress={loadPrices} disabled={loading}>
               <Text style={styles.refreshText}>
-                {loading ? t(selectedLanguage, 'mandiLoading') : t(selectedLanguage, 'mandiRefresh')}
+                {loading ? t(selectedLanguage, 'mandiLoading') : `↻ ${t(selectedLanguage, 'mandiRefresh')}`}
               </Text>
             </Pressable>
           </View>
 
-          {/* Price Analysis Buttons - Sell & Buy */}
+          {/* Market Intelligence CTA Tiles (Sell vs Buy) */}
           {prices.length > 0 && !loading && (
             <View style={styles.analysisBtnsRow}>
-              {/* Sell Analysis - Find highest prices */}
-              <Pressable 
-                style={[styles.analyzeBtn, styles.sellAnalyzeBtn]} 
+              {/* Sell Analysis */}
+              <Pressable
+                style={({ pressed }) => [styles.analyzeCard, styles.sellCard, pressed && { opacity: 0.85 }]}
                 onPress={() => handleAnalyze('sell')}
               >
-                <Text style={styles.analyzeBtnIcon}>💰</Text>
-                <View style={styles.analyzeBtnContent}>
-                  <Text style={styles.analyzeBtnTitle}>{t(selectedLanguage, 'sellAnalysis')}</Text>
-                  <Text style={styles.analyzeBtnSubtitle}>{t(selectedLanguage, 'sellAnalysisHint')}</Text>
+                <View style={styles.analyzeTop}>
+                  <Text style={styles.analyzeIcon}>💰</Text>
+                  <View style={styles.signalBadgeGreen}>
+                    <Text style={styles.signalBadgeText}>SELL STRATEGY</Text>
+                  </View>
                 </View>
+                <Text style={styles.analyzeCardTitle}>{t(selectedLanguage, 'sellAnalysis')}</Text>
+                <Text style={styles.analyzeCardSubtitle}>{t(selectedLanguage, 'sellAnalysisHint')}</Text>
               </Pressable>
 
-              {/* Buy Analysis - Find cheapest prices */}
-              <Pressable 
-                style={[styles.analyzeBtn, styles.buyAnalyzeBtn]} 
+              {/* Buy Analysis */}
+              <Pressable
+                style={({ pressed }) => [styles.analyzeCard, styles.buyCard, pressed && { opacity: 0.85 }]}
                 onPress={() => handleAnalyze('buy')}
               >
-                <Text style={styles.analyzeBtnIcon}>🛒</Text>
-                <View style={styles.analyzeBtnContent}>
-                  <Text style={styles.analyzeBtnTitle}>{t(selectedLanguage, 'buyAnalysis')}</Text>
-                  <Text style={styles.analyzeBtnSubtitle}>{t(selectedLanguage, 'buyAnalysisHint')}</Text>
+                <View style={styles.analyzeTop}>
+                  <Text style={styles.analyzeIcon}>🛒</Text>
+                  <View style={styles.signalBadgeBlue}>
+                    <Text style={styles.signalBadgeText}>INPUT SOURCING</Text>
+                  </View>
                 </View>
+                <Text style={styles.analyzeCardTitle}>{t(selectedLanguage, 'buyAnalysis')}</Text>
+                <Text style={styles.analyzeCardSubtitle}>{t(selectedLanguage, 'buyAnalysisHint')}</Text>
               </Pressable>
             </View>
           )}
 
+          {/* Loading / Error / Empty / Price List */}
           {loading ? (
             <View style={styles.loadingWrap}>
-              <ActivityIndicator size="large" color="#7eff8a" />
+              <ActivityIndicator size="large" color={colors.emerald} />
               <Text style={styles.loadingText}>{t(selectedLanguage, 'mandiLoading')}</Text>
             </View>
           ) : error ? (
@@ -217,7 +227,7 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
               <Text style={styles.emptyText}>{t(selectedLanguage, 'mandiNoData')}</Text>
             </View>
           ) : (
-            <>
+            <View style={styles.priceList}>
               {prices.map((item, index) => (
                 <MandiPriceCard
                   key={`${item.crop}-${item.market}-${index}`}
@@ -226,12 +236,12 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
                   t={t}
                 />
               ))}
-            </>
+            </View>
           )}
         </ScrollView>
       </ImageBackground>
 
-      {/* Price Analysis Modal */}
+      {/* Price Intelligence Modal */}
       <Modal
         visible={showAnalysis}
         animationType="slide"
@@ -241,30 +251,23 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {analysisMode === 'buy' ? '🛒' : '💰'} {t(selectedLanguage, analysisMode === 'buy' ? 'buyAnalysis' : 'sellAnalysis')}
-              </Text>
+              <View>
+                <Text style={styles.modalTitle}>
+                  {analysisMode === 'buy' ? '🛒' : '💰'} {t(selectedLanguage, analysisMode === 'buy' ? 'buyAnalysis' : 'sellAnalysis')}
+                </Text>
+                <Text style={styles.modalSubHeader}>
+                  {analysisMode === 'buy' ? t(selectedLanguage, 'buyModeDesc') : t(selectedLanguage, 'sellModeDesc')}
+                </Text>
+              </View>
               <Pressable style={styles.modalClose} onPress={() => setShowAnalysis(false)}>
                 <Text style={styles.modalCloseText}>✕</Text>
               </Pressable>
             </View>
 
-            {/* Mode Indicator */}
-            <View style={[
-              styles.modeIndicator,
-              analysisMode === 'buy' ? styles.buyModeIndicator : styles.sellModeIndicator
-            ]}>
-              <Text style={styles.modeIndicatorText}>
-                {analysisMode === 'buy' 
-                  ? t(selectedLanguage, 'buyModeDesc') 
-                  : t(selectedLanguage, 'sellModeDesc')}
-              </Text>
-            </View>
-
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               {analyzingPrices ? (
                 <View style={styles.analysisLoading}>
-                  <ActivityIndicator size="large" color="#7eff8a" />
+                  <ActivityIndicator size="large" color={colors.emerald} />
                   <Text style={styles.analysisLoadingText}>{t(selectedLanguage, 'analyzingPrices')}</Text>
                 </View>
               ) : analysis ? (
@@ -275,12 +278,14 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
                     <Text style={styles.analysisCardText}>{analysis.summary}</Text>
                   </View>
 
-                  {/* Best Market - changes based on mode */}
+                  {/* Best Market Card */}
                   {analysis.bestMarket && (
-                    <View style={[
-                      styles.analysisCard, 
-                      analysisMode === 'buy' ? styles.cheapestMarketCard : styles.bestMarketCard
-                    ]}>
+                    <View
+                      style={[
+                        styles.analysisCard,
+                        analysisMode === 'buy' ? styles.cheapestMarketCard : styles.bestMarketCard,
+                      ]}
+                    >
                       <Text style={styles.bestMarketLabel}>
                         {analysisMode === 'buy' ? '💸' : '🏆'} {t(selectedLanguage, analysisMode === 'buy' ? 'cheapestMarket' : 'bestMarket')}
                       </Text>
@@ -295,7 +300,7 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
                     </View>
                   )}
 
-                  {/* Price Range */}
+                  {/* Price Range Meter */}
                   {analysis.priceRange && (
                     <View style={styles.priceRangeRow}>
                       <View style={styles.priceRangeBox}>
@@ -305,7 +310,9 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
                       <View style={styles.priceRangeDivider} />
                       <View style={styles.priceRangeBox}>
                         <Text style={styles.priceRangeLabel}>{t(selectedLanguage, 'avgPrice')}</Text>
-                        <Text style={[styles.priceRangeValue, styles.avgPriceValue]}>{formatPrice(analysis.avgPrice)}</Text>
+                        <Text style={[styles.priceRangeValue, styles.avgPriceValue]}>
+                          {formatPrice(analysis.avgPrice)}
+                        </Text>
                       </View>
                       <View style={styles.priceRangeDivider} />
                       <View style={styles.priceRangeBox}>
@@ -323,23 +330,25 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
                     </View>
                   )}
 
-                  {/* Sell/Buy Signal based on mode */}
+                  {/* Sell/Buy Action Signal */}
                   {(analysis.sellSignal || analysis.buySignal) && (
-                    <View style={[
-                      styles.sellSignalCard,
-                      (analysis.sellSignal === 'SELL_NOW' || analysis.buySignal === 'BUY_NOW') && styles.sellSignalGreen,
-                      (analysis.sellSignal === 'HOLD' || analysis.buySignal === 'HOLD') && styles.sellSignalYellow,
-                      (analysis.sellSignal === 'WAIT' || analysis.buySignal === 'WAIT') && styles.sellSignalRed,
-                    ]}>
+                    <View
+                      style={[
+                        styles.sellSignalCard,
+                        (analysis.sellSignal === 'SELL_NOW' || analysis.buySignal === 'BUY_NOW') && styles.sellSignalGreen,
+                        (analysis.sellSignal === 'HOLD' || analysis.buySignal === 'HOLD') && styles.sellSignalYellow,
+                        (analysis.sellSignal === 'WAIT' || analysis.buySignal === 'WAIT') && styles.sellSignalRed,
+                      ]}
+                    >
                       <Text style={styles.sellSignalText}>
-                        {(analysis.sellSignal === 'SELL_NOW' || analysis.buySignal === 'BUY_NOW') ? '✅ ' : 
+                        {(analysis.sellSignal === 'SELL_NOW' || analysis.buySignal === 'BUY_NOW') ? '✅ ' :
                          (analysis.sellSignal === 'HOLD' || analysis.buySignal === 'HOLD') ? '⏸️ ' : '⏳ '}
                         {(analysis.sellSignal || analysis.buySignal || '').replace('_', ' ')}
                       </Text>
                     </View>
                   )}
 
-                  {/* Ranked Markets */}
+                  {/* Ranked Markets Table */}
                   {analysis.rankedMarkets && analysis.rankedMarkets.length > 0 && (
                     <View style={styles.analysisCard}>
                       <Text style={styles.analysisCardTitle}>📊 {t(selectedLanguage, 'marketRanking')}</Text>
@@ -347,13 +356,15 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
                         {t(selectedLanguage, analysisMode === 'buy' ? 'lowestToHighest' : 'highestToLowest')}
                       </Text>
                       {analysis.rankedMarkets.map((market, idx) => (
-                        <View key={idx} style={[
-                          styles.rankedMarketRow,
-                          idx === 0 && (analysisMode === 'buy' ? styles.topRankedMarketBuy : styles.topRankedMarket),
-                          idx === analysis.rankedMarkets.length - 1 && styles.lastRankedMarket,
-                        ]}>
+                        <View
+                          key={idx}
+                          style={[
+                            styles.rankedMarketRow,
+                            idx === 0 && styles.topRankedMarket,
+                          ]}
+                        >
                           <View style={styles.rankBadge}>
-                            <Text style={[styles.rankNumber, idx === 0 && styles.topRankNumber]}>
+                            <Text style={styles.rankNumber}>
                               {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
                             </Text>
                           </View>
@@ -361,11 +372,7 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
                             <Text style={styles.rankedMarketName}>{market.market}</Text>
                             <Text style={styles.rankedMarketCrop}>{market.crop}</Text>
                           </View>
-                          <Text style={[
-                            styles.rankedMarketPrice,
-                            idx === 0 && styles.topPrice,
-                            idx === analysis.rankedMarkets.length - 1 && styles.lowPrice,
-                          ]}>
+                          <Text style={[styles.rankedMarketPrice, idx === 0 && styles.topPrice]}>
                             {formatPrice(market.price)}
                           </Text>
                         </View>
@@ -379,19 +386,6 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
                       <Text style={styles.analysisCardTitle}>💬 {t(selectedLanguage, 'priceTips')}</Text>
                       {analysis.tips.map((tip, idx) => (
                         <Text key={idx} style={styles.tipItem}>• {tip}</Text>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* Crop Summaries */}
-                  {analysis.cropSummaries && analysis.cropSummaries.length > 0 && (
-                    <View style={styles.analysisCard}>
-                      <Text style={styles.analysisCardTitle}>🌾 {t(selectedLanguage, 'cropWiseAnalysis')}</Text>
-                      {analysis.cropSummaries.slice(0, 5).map((crop, idx) => (
-                        <View key={idx} style={styles.cropSummaryRow}>
-                          <Text style={styles.cropSummaryName}>{crop.crop}</Text>
-                          <Text style={styles.cropSummaryPrice}>{formatPrice(crop.avgPrice)}</Text>
-                        </View>
                       ))}
                     </View>
                   )}
@@ -410,15 +404,15 @@ export default function MandiPricesScreen({ selectedLanguage, onBack }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: colors.ground,
   },
   background: {
     flex: 1,
-    backgroundColor: '#0a1f12',
+    backgroundColor: '#07130a',
   },
   overlayTop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 15, 8, 0.88)',
+    backgroundColor: 'rgba(5, 14, 8, 0.88)',
   },
   overlayGradient: {
     position: 'absolute',
@@ -426,520 +420,491 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-    backgroundColor: 'rgba(5, 20, 10, 0.4)',
+    backgroundColor: 'rgba(5, 18, 9, 0.6)',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 24,
+    padding: spacing.xl,
+    paddingBottom: 60,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
   backBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   backText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#dfffe4',
+    color: colors.ink,
   },
   listenBtn: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(126,255,138,0.16)',
+    paddingHorizontal: 14,
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.28)',
   },
   listenText: {
-    color: '#dfffe4',
+    color: colors.emerald,
     fontSize: 12,
     fontWeight: '800',
   },
+  titleSection: {
+    marginBottom: spacing.md,
+  },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
-    color: '#fff',
+    color: '#ffffff',
+    letterSpacing: -0.4,
   },
   subtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.72)',
-    marginBottom: 14,
+    marginTop: 3,
+    fontSize: 13,
+    color: colors.muted,
   },
   chipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 12,
+    marginBottom: spacing.lg,
   },
   chip: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: radii.md,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
   },
   chipText: {
-    color: 'rgba(255,255,255,0.85)',
+    color: colors.inkSecondary,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   refreshBtn: {
-    backgroundColor: '#2f8d41',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    backgroundColor: '#1b6334',
+    borderRadius: radii.md,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.35)',
   },
   refreshText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 12,
     fontWeight: '800',
-  },
-  loadingWrap: {
-    marginTop: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  loadingText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  errorCard: {
-    marginTop: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,107,0.4)',
-    backgroundColor: 'rgba(255,107,107,0.12)',
-    padding: 14,
-  },
-  errorTitle: {
-    color: '#ff9b9b',
-    fontSize: 15,
-    fontWeight: '900',
-    marginBottom: 6,
-  },
-  errorText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  retryBtn: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  retryText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  emptyCard: {
-    marginTop: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    padding: 14,
-  },
-  emptyText: {
-    color: 'rgba(255,255,255,0.84)',
-    fontSize: 13,
-    fontWeight: '700',
   },
   offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,217,102,0.15)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,217,102,0.3)',
-    padding: 12,
-    marginBottom: 12,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: 10,
   },
   offlineIcon: {
     fontSize: 20,
-    marginRight: 12,
   },
   offlineInfo: {
     flex: 1,
   },
   offlineText: {
-    color: '#ffd966',
+    color: colors.gold,
     fontSize: 13,
     fontWeight: '800',
   },
   offlineSync: {
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.muted,
     fontSize: 11,
     marginTop: 2,
   },
-  // Price Analysis Buttons Row
+
+  // Analysis Cards Row
   analysisBtnsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
+    gap: 12,
+    marginBottom: spacing.lg,
   },
-  analyzeBtn: {
+  analyzeCard: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(126,255,138,0.12)',
-    borderRadius: 14,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(126,255,138,0.3)',
-    padding: 12,
+    padding: spacing.md,
   },
-  sellAnalyzeBtn: {
-    backgroundColor: 'rgba(126,255,138,0.12)',
-    borderColor: 'rgba(126,255,138,0.3)',
+  sellCard: {
+    backgroundColor: 'rgba(18, 36, 25, 0.88)',
+    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
-  buyAnalyzeBtn: {
-    backgroundColor: 'rgba(102,178,255,0.12)',
-    borderColor: 'rgba(102,178,255,0.3)',
+  buyCard: {
+    backgroundColor: 'rgba(18, 36, 25, 0.88)',
+    borderColor: 'rgba(56, 189, 248, 0.3)',
   },
-  analyzeBtnIcon: {
-    fontSize: 24,
-    marginRight: 10,
+  analyzeTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  analyzeBtnContent: {
-    flex: 1,
+  analyzeIcon: {
+    fontSize: 20,
   },
-  analyzeBtnTitle: {
-    color: '#7eff8a',
+  signalBadgeGreen: {
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+  },
+  signalBadgeBlue: {
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+  },
+  signalBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: colors.inkSecondary,
+    letterSpacing: 0.5,
+  },
+  analyzeCardTitle: {
     fontSize: 14,
     fontWeight: '800',
+    color: '#ffffff',
   },
-  analyzeBtnSubtitle: {
-    color: 'rgba(255,255,255,0.65)',
+  analyzeCardSubtitle: {
     fontSize: 10,
+    color: colors.muted,
     marginTop: 2,
   },
-  analyzeBtnArrow: {
-    color: '#7eff8a',
-    fontSize: 20,
+
+  // Loading & State Wrappers
+  loadingWrap: {
+    marginTop: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  errorCard: {
+    backgroundColor: 'rgba(248, 113, 113, 0.12)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.35)',
+    padding: spacing.lg,
+    marginTop: 10,
+  },
+  errorTitle: {
+    color: colors.coral,
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  errorText: {
+    color: colors.inkSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  retryBtn: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: radii.md,
+  },
+  retryText: {
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: '800',
   },
-  // Modal Styles
+  emptyCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: colors.muted,
+    fontSize: 13,
+  },
+  priceList: {
+    gap: 4,
+  },
+
+  // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#0f2818',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '90%',
+    backgroundColor: '#0c1a11',
+    borderTopLeftRadius: radii.xl + 6,
+    borderTopRightRadius: radii.xl + 6,
+    maxHeight: '88%',
     borderWidth: 1,
-    borderColor: 'rgba(126,255,138,0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    padding: spacing.xl,
   },
   modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    alignItems: 'flex-start',
+    marginBottom: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    paddingBottom: spacing.md,
   },
   modalTitle: {
-    color: '#fff',
     fontSize: 20,
     fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: -0.3,
+  },
+  modalSubHeader: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 3,
   },
   modalClose: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalCloseText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  modeIndicator: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    padding: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  sellModeIndicator: {
-    backgroundColor: 'rgba(126,255,138,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(126,255,138,0.3)',
-  },
-  buyModeIndicator: {
-    backgroundColor: 'rgba(102,178,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(102,178,255,0.3)',
-  },
-  modeIndicatorText: {
-    color: '#fff',
-    fontSize: 12,
+    color: '#ffffff',
+    fontSize: 15,
     fontWeight: '700',
   },
   modalScroll: {
-    padding: 16,
+    marginBottom: spacing.lg,
   },
   analysisLoading: {
+    paddingVertical: 50,
     alignItems: 'center',
-    paddingVertical: 40,
+    gap: 12,
   },
   analysisLoadingText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
-    marginTop: 12,
+    color: colors.muted,
+    fontSize: 13,
   },
   analysisCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    padding: 14,
-    marginBottom: 12,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
   analysisCardTitle: {
-    color: '#fff',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
-    marginBottom: 8,
+    color: '#ffffff',
+    marginBottom: 6,
   },
   analysisCardText: {
-    color: 'rgba(255,255,255,0.8)',
     fontSize: 13,
-    lineHeight: 20,
+    color: colors.inkSecondary,
+    lineHeight: 19,
   },
   bestMarketCard: {
-    backgroundColor: 'rgba(126,255,138,0.1)',
-    borderColor: 'rgba(126,255,138,0.3)',
-    alignItems: 'center',
-    paddingVertical: 20,
+    borderColor: 'rgba(52, 211, 153, 0.35)',
+    backgroundColor: 'rgba(52, 211, 153, 0.08)',
   },
   cheapestMarketCard: {
-    backgroundColor: 'rgba(102,178,255,0.1)',
-    borderColor: 'rgba(102,178,255,0.3)',
-    alignItems: 'center',
-    paddingVertical: 20,
+    borderColor: 'rgba(56, 189, 248, 0.35)',
+    backgroundColor: 'rgba(56, 189, 248, 0.08)',
   },
   bestMarketLabel: {
-    color: '#7eff8a',
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 4,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.emerald,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   bestMarketName: {
-    color: '#fff',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900',
+    color: '#ffffff',
+    marginTop: 3,
   },
   bestMarketPrice: {
-    color: '#7eff8a',
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '900',
-    marginVertical: 4,
+    color: colors.gold,
+    marginTop: 2,
   },
   bestMarketCrop: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 13,
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 2,
   },
   savingsText: {
-    color: '#66b2ff',
     fontSize: 12,
+    color: colors.emerald,
     fontWeight: '700',
-    marginTop: 8,
-    backgroundColor: 'rgba(102,178,255,0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    marginTop: 6,
   },
+
+  // Price Range Meter
   priceRangeRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    marginBottom: 12,
-    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: radii.md,
+    padding: 12,
+    marginBottom: spacing.md,
   },
   priceRangeBox: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 14,
+  },
+  priceRangeLabel: {
+    fontSize: 10,
+    color: colors.faint,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  priceRangeValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.inkSecondary,
+    marginTop: 3,
+  },
+  avgPriceValue: {
+    color: colors.gold,
   },
   priceRangeDivider: {
     width: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
-  priceRangeLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  priceRangeValue: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  avgPriceValue: {
-    color: '#ffd966',
-  },
+
+  // Recommendation Card
   recommendationCard: {
-    backgroundColor: 'rgba(255,217,102,0.1)',
-    borderColor: 'rgba(255,217,102,0.3)',
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
   },
   recommendationLabel: {
-    color: '#ffd966',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '800',
-    marginBottom: 6,
+    color: colors.gold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 4,
   },
   recommendationText: {
-    color: '#fff',
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13,
+    color: colors.ink,
+    lineHeight: 18,
   },
+
+  // Signal Card
   sellSignalCard: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    padding: 12,
+    borderRadius: radii.md,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
+    borderWidth: 1,
   },
   sellSignalGreen: {
-    backgroundColor: 'rgba(126,255,138,0.2)',
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderColor: 'rgba(52, 211, 153, 0.4)',
   },
   sellSignalYellow: {
-    backgroundColor: 'rgba(255,217,102,0.2)',
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    borderColor: 'rgba(251, 191, 36, 0.4)',
   },
   sellSignalRed: {
-    backgroundColor: 'rgba(255,107,107,0.2)',
+    backgroundColor: 'rgba(248, 113, 113, 0.15)',
+    borderColor: 'rgba(248, 113, 113, 0.4)',
   },
   sellSignalText: {
-    color: '#fff',
-    fontSize: 18,
+    fontSize: 13,
     fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: 0.8,
   },
-  tipItem: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 13,
-    lineHeight: 22,
-    marginTop: 4,
-  },
-  cropSummaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
-  cropSummaryName: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  cropSummaryPrice: {
-    color: '#7eff8a',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  analysisError: {
-    color: 'rgba(255,107,107,0.9)',
-    fontSize: 14,
-    textAlign: 'center',
-    paddingVertical: 20,
-  },
-  // Ranked Markets Styles
+
+  // Ranked Markets
   rankingSubtitle: {
-    color: 'rgba(255,255,255,0.5)',
     fontSize: 11,
-    marginBottom: 12,
-    marginTop: -4,
+    color: colors.muted,
+    marginBottom: 8,
   },
   rankedMarketRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   topRankedMarket: {
-    backgroundColor: 'rgba(126,255,138,0.1)',
-    borderRadius: 10,
-    marginBottom: 4,
-    paddingHorizontal: 8,
-    borderBottomWidth: 0,
-  },
-  topRankedMarketBuy: {
-    backgroundColor: 'rgba(102,178,255,0.15)',
-    borderRadius: 10,
-    marginBottom: 4,
-    paddingHorizontal: 8,
-    borderBottomWidth: 0,
-  },
-  lastRankedMarket: {
-    backgroundColor: 'rgba(255,107,107,0.1)',
-    borderRadius: 10,
-    marginTop: 4,
-    paddingHorizontal: 8,
-    borderBottomWidth: 0,
+    backgroundColor: 'rgba(52, 211, 153, 0.06)',
+    borderRadius: radii.sm,
+    paddingHorizontal: 6,
   },
   rankBadge: {
-    width: 36,
-    alignItems: 'center',
+    width: 28,
   },
   rankNumber: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: '700',
-  },
-  topRankNumber: {
-    fontSize: 18,
   },
   rankedMarketInfo: {
     flex: 1,
-    marginLeft: 8,
   },
   rankedMarketName: {
-    color: '#fff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
+    color: colors.ink,
   },
   rankedMarketCrop: {
-    color: 'rgba(255,255,255,0.5)',
     fontSize: 11,
-    marginTop: 2,
+    color: colors.muted,
   },
   rankedMarketPrice: {
-    color: '#fff',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
+    color: colors.inkSecondary,
   },
   topPrice: {
-    color: '#7eff8a',
-    fontSize: 17,
+    color: colors.gold,
   },
-  lowPrice: {
-    color: '#ff6b6b',
+  tipItem: {
+    fontSize: 12,
+    color: colors.inkSecondary,
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  analysisError: {
+    color: colors.coral,
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
 });

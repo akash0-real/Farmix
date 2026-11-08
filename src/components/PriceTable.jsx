@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { colors, radii } from '../theme/theme';
 
 export default function PriceTable({ rows = [] }) {
   return (
@@ -11,7 +12,7 @@ export default function PriceTable({ rows = [] }) {
       {rows.map(item => (
         <View style={styles.dataRow} key={item.crop}>
           <Text style={styles.cell}>{item.crop}</Text>
-          <Text style={styles.cell}>{item.price}</Text>
+          <Text style={[styles.cell, styles.priceCell]}>{item.price}</Text>
         </View>
       ))}
     </View>
@@ -21,26 +22,37 @@ export default function PriceTable({ rows = [] }) {
 const styles = StyleSheet.create({
   table: {
     borderWidth: 1,
-    borderColor: '#d9e1dc',
-    borderRadius: 12,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: radii.md,
     overflow: 'hidden',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(18, 36, 25, 0.85)',
   },
   headerRow: {
     flexDirection: 'row',
-    backgroundColor: '#e8f1ea',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   dataRow: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: '#eef2ef',
+    borderTopColor: 'rgba(255, 255, 255, 0.04)',
   },
   cell: {
     flex: 1,
     padding: 12,
-    color: '#1a223d',
+    color: colors.inkSecondary,
+    fontSize: 13,
   },
   headerCell: {
+    fontWeight: '800',
+    color: colors.emerald,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  priceCell: {
+    color: colors.gold,
     fontWeight: '700',
   },
 });
